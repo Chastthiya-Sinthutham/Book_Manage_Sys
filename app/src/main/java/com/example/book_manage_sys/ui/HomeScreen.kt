@@ -508,18 +508,6 @@ fun BookEditDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("ราคา", fontSize = 12.sp, color = Color(0xFF8A9B97), fontWeight = FontWeight.Medium)
-                        OutlinedTextField(
-                            value = price, onValueChange = { price = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = TealAccent,
-                                unfocusedBorderColor = Color(0xFFD6E4E1)
-                            )
-                        )
-                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("ประเภท", fontSize = 12.sp, color = Color(0xFF8A9B97), fontWeight = FontWeight.Medium)
