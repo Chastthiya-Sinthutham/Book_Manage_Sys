@@ -187,9 +187,10 @@ fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
             ) {
                 Button(
                     onClick = {
-                        viewModel.currentUser = null
+                        viewModel.logout()
                         navController.navigate(Screen.Login.route) {
-                            popUpTo(0)
+                            popUpTo(0){ inclusive = true } // ← ล้าง back stack ทั้งหมด
+                            launchSingleTop = true
                         }
                     },
                     shape = RoundedCornerShape(50.dp),

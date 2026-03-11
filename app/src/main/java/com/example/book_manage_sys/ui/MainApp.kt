@@ -1,5 +1,8 @@
 package com.example.book_manage_sys.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -9,7 +12,9 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -28,6 +33,15 @@ sealed class BottomBarScreen(val route: String, val title: String, val icon: Ima
 fun MainApp() {
     val navController = rememberNavController()
     val viewModel: MainViewModel = viewModel()
+    if (!viewModel.isSessionRestored) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color(0xFFF0F4F2)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color(0xFF7ECEC4))
+        }
+        return
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val isAdmin = viewModel.currentUser?.role?.equals("admin", ignoreCase = true) == true
@@ -77,7 +91,8 @@ fun MainApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Login.route,
+            startDestination = if (viewModel.currentUser != null)
+                Screen.Home.route else Screen.Login.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Login.route) {
