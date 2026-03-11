@@ -97,45 +97,6 @@ fun HomeScreen(navController: NavController, viewModel: MainViewModel) {
 
         Scaffold(
             containerColor = Color.Transparent,
-            bottomBar = {
-                // ── Bottom nav styled ──────────────────────────
-                NavigationBar(
-                    containerColor = Color.White,
-                    tonalElevation = 8.dp
-                ) {
-                    NavigationBarItem(
-                        selected = true,
-                        onClick = {},
-                        icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                        label = { Text("Home", fontSize = 11.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor  = TealAccent,
-                            selectedTextColor  = TealAccent,
-                            indicatorColor     = TealAccent.copy(alpha = 0.15f)
-                        )
-                    )
-                    NavigationBarItem(
-                        selected = false,
-                        onClick = { navController.navigate(Screen.Loans.route) },
-                        icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
-                        label = { Text("Loans", fontSize = 11.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            unselectedIconColor = Color(0xFF8A9B97),
-                            unselectedTextColor = Color(0xFF8A9B97)
-                        )
-                    )
-                    NavigationBarItem(
-                        selected = false,
-                        onClick = { navController.navigate(Screen.Profile.route) },
-                        icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        label = { Text("Profile", fontSize = 11.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            unselectedIconColor = Color(0xFF8A9B97),
-                            unselectedTextColor = Color(0xFF8A9B97)
-                        )
-                    )
-                }
-            },
             floatingActionButton = {
                 if (viewModel.currentUser?.role?.equals("admin", ignoreCase = true) == true) {
                     FloatingActionButton(

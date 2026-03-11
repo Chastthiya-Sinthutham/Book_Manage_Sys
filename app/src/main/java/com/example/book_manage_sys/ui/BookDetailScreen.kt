@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,37 +27,70 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.book_manage_sys.network.RetrofitClient
 import com.example.book_manage_sys.viewmodel.MainViewModel
-import androidx.compose.ui.platform.LocalContext
-private val BgColor      = Color(0xFFF0F4F2)
-private val TealAccent   = Color(0xFF7ECEC4)
-private val PurpleAccent = Color(0xFF9B59B6)
-private val CardBg       = Color(0xFFFFFFFF)
-private val LabelGray    = Color(0xFF9E9E9E)
-private val ValueDark    = Color(0xFF2C3E50)
+
+// ── Theme Colors (เหมือน HomeScreen & LoansScreen) ────────────
+private val BgColor       = Color(0xFFF0F4F2)
+private val TealAccent    = Color(0xFF7ECEC4)
+private val PurpleAccent  = Color(0xFF7E57C2)
+private val AvailColor    = Color(0xFF4CAF50)
+private val BorrowedColor = Color(0xFFE53935)
+private val CardBg        = Color(0xFFFFFFFF)
+private val LabelGray     = Color(0xFF8A9B97)
+private val ValueDark     = Color(0xFF1A2E2A)
 
 @Composable
 fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, bookId: Int?) {
     val book = viewModel.books.find { it.id == bookId } ?: return
     var showEditDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(BgColor)
     ) {
-        // Teal blob top-right
+        // ── Decorative background circles (เหมือน LoansScreen) ─
         Box(
             modifier = Modifier
-                .size(140.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 40.dp, y = (-20).dp)
+                .size(220.dp)
+                .offset(x = (-60).dp, y = (-60).dp)
                 .clip(CircleShape)
-                .background(TealAccent.copy(alpha = 0.4f))
+                .background(TealAccent.copy(alpha = 0.18f))
+        )
+        Box(
+            modifier = Modifier
+                .size(160.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 50.dp, y = 30.dp)
+                .clip(CircleShape)
+                .background(PurpleAccent.copy(alpha = 0.10f))
+        )
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 20.dp, y = 140.dp)
+                .clip(CircleShape)
+                .background(TealAccent.copy(alpha = 0.12f))
+        )
+        Box(
+            modifier = Modifier
+                .size(180.dp)
+                .align(Alignment.BottomStart)
+                .offset(x = (-50).dp, y = 50.dp)
+                .clip(CircleShape)
+                .background(PurpleAccent.copy(alpha = 0.08f))
+        )
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .align(Alignment.BottomEnd)
+                .offset(x = 30.dp, y = (-80).dp)
+                .clip(CircleShape)
+                .background(TealAccent.copy(alpha = 0.13f))
         )
 
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // ── Scrollable body ──────────────────────────────────────
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -66,57 +100,116 @@ fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, boo
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Search icon top-left (back nav)
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.Search, contentDescription = "Back", tint = Color.DarkGray)
+                // ── Top bar: Back button ───────────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White)
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TealAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
 
-                // Book title
-                Text(
-                    text = book.name,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ValueDark,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Book cover image with shadow
-                AsyncImage(
-                    model = RetrofitClient.getImageUrl(book.img),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth(0.65f)
-                        .aspectRatio(0.72f)
-                        .shadow(8.dp, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                // ── Book cover ─────────────────────────────────
+                Box {
+                    AsyncImage(
+                        model = RetrofitClient.getImageUrl(book.img),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth(0.60f)
+                            .aspectRatio(0.72f)
+                            .shadow(12.dp, RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(16.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    // Status badge on cover
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (book.status == 0) AvailColor.copy(alpha = 0.92f)
+                        else BorrowedColor.copy(alpha = 0.92f)
+                    ) {
+                        Text(
+                            text = if (book.status == 0) "ว่าง" else "จองแล้ว",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Detail card
+                // ── Section header: ชื่อหนังสือ ────────────────
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .width(5.dp)
+                            .height(26.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(
+                                Brush.verticalGradient(listOf(TealAccent, Color(0xFF4DB6AC)))
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = book.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = ValueDark,
+                        textAlign = TextAlign.Start
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // ── Detail card ────────────────────────────────
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(3.dp, RoundedCornerShape(20.dp)),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = CardBg),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(0.dp)
                 ) {
+                    // Teal accent bar top
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(
+                                Brush.horizontalGradient(listOf(TealAccent, Color(0xFF4DB6AC)))
+                            )
+                    )
                     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
 
-                        DetailRow(label = "ผู้แต่ง", value = book.writer ?: "-")
-                        HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(vertical = 8.dp))
+                        DetailRow(label = "ผู้แต่ง",    value = book.writer ?: "-")
+                        HorizontalDivider(color = Color(0xFFEEF3F1), modifier = Modifier.padding(vertical = 8.dp))
 
                         DetailRow(label = "สำนักพิมพ์", value = book.office ?: "-")
-                        HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(color = Color(0xFFEEF3F1), modifier = Modifier.padding(vertical = 8.dp))
 
-                        DetailRow(label = "ปีที่พิมพ์", value = book.birth ?: "-")
-                        HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(vertical = 8.dp))
+                        DetailRow(label = "ปีที่พิมพ์", value = book.birth  ?: "-")
+                        HorizontalDivider(color = Color(0xFFEEF3F1), modifier = Modifier.padding(vertical = 8.dp))
 
-                        DetailRow(label = "ประเภท", value = book.typeName ?: "-")
-                        HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(vertical = 8.dp))
+                        DetailRow(label = "ประเภท",     value = book.typeName ?: "-")
+                        HorizontalDivider(color = Color(0xFFEEF3F1), modifier = Modifier.padding(vertical = 8.dp))
 
                         // Synopsis
                         Row(
@@ -146,34 +239,63 @@ fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, boo
 
                 if (viewModel.errorMessage != null) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(viewModel.errorMessage!!, color = Color.Red, fontSize = 12.sp)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = BorrowedColor.copy(alpha = 0.10f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, BorrowedColor.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Text(
+                            viewModel.errorMessage!!,
+                            color = BorrowedColor,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ── Action buttons ───────────────────────────────────
+                // ── Action buttons ─────────────────────────────
                 if (viewModel.currentUser?.role?.equals("admin", ignoreCase = true) == true) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Button(
+                        OutlinedButton(
                             onClick = {
                                 viewModel.deleteBook(book.id)
                                 navController.popBackStack()
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252)),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.5.dp, BorrowedColor.copy(alpha = 0.7f)
+                            ),
                             modifier = Modifier.weight(1f).height(50.dp),
-                            shape = RoundedCornerShape(50.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text("ลบหนังสือ", color = Color.White, fontWeight = FontWeight.Bold)
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = BorrowedColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("ลบหนังสือ", color = BorrowedColor, fontWeight = FontWeight.Bold)
                         }
                         Button(
                             onClick = { showEditDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = PurpleAccent),
+                            colors = ButtonDefaults.buttonColors(containerColor = TealAccent),
                             modifier = Modifier.weight(1f).height(50.dp),
-                            shape = RoundedCornerShape(50.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text("แก้ไข", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -185,65 +307,32 @@ fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, boo
                                 navController.popBackStack()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
                         enabled = book.status == 0 && !viewModel.isLoading,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = PurpleAccent,
-                            disabledContainerColor = Color.Gray
+                            containerColor = TealAccent,
+                            disabledContainerColor = Color(0xFFB0BEC5)
                         ),
-                        shape = RoundedCornerShape(50.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         if (viewModel.isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
                         } else {
                             Text(
                                 text = if (book.status == 0) "จองเลย" else "ไม่ว่าง",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
+                                fontSize = 15.sp
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            // ── Bottom Nav ───────────────────────────────────────────
-            NavigationBar(containerColor = CardBg, tonalElevation = 8.dp) {
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { navController.navigate(Screen.Home.route) },
-                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                    label = { Text("Home", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = PurpleAccent,
-                        selectedTextColor = PurpleAccent,
-                        indicatorColor = Color.Transparent
-                    )
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Screen.Loans.route) },
-                    icon = { Icon(Icons.Default.Menu, contentDescription = null) },
-                    label = { Text("Loans", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray,
-                        indicatorColor = Color.Transparent
-                    )
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Screen.Profile.route) },
-                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                    label = { Text("Profile", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray,
-                        indicatorColor = Color.Transparent
-                    )
-                )
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

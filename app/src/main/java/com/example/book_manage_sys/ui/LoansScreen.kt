@@ -45,46 +45,6 @@ fun LoansScreen(navController: NavController, viewModel: MainViewModel) {
 
     Scaffold(
         containerColor = BgColor,
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color.White,
-                tonalElevation = 8.dp
-            ) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Screen.Home.route) },
-                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                    label = { Text("Home", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray,
-                        indicatorColor = Color.Transparent
-                    )
-                )
-                NavigationBarItem(
-                    selected = true,
-                    onClick = {},
-                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
-                    label = { Text("Loans", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = PurpleAccent,
-                        selectedTextColor = PurpleAccent,
-                        indicatorColor = Color.Transparent
-                    )
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Screen.Profile.route) },
-                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                    label = { Text("Profile", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray,
-                        indicatorColor = Color.Transparent
-                    )
-                )
-            }
-        }
     ) { padding ->
         Box(
             modifier = Modifier
