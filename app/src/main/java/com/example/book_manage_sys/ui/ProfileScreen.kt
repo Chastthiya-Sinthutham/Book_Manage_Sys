@@ -176,7 +176,45 @@ fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ── Logout button (ชิดขวา) ──────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    onClick = {
+                        viewModel.currentUser = null
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0)
+                        }
+                    },
+                    shape = RoundedCornerShape(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF5252)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Logout",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // ── Bottom Nav ──────────────────────────────────────────
             NavigationBar(
