@@ -31,175 +31,167 @@ import com.example.book_manage_sys.viewmodel.MainViewModel
 import java.io.File
 import java.io.FileOutputStream
 
+private val TealTop    = Color(0xFF7ECEC4)
+private val TealBottom = Color(0xFFB2EBE6)
+private val PurpleRing = Color(0xFF9B59B6)
+private val BgColor    = Color(0xFFF0F4F2)
+private val PurpleNav  = Color(0xFF9B59B6)
+private val TealAccent     = Color(0xFFFFFFFF)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonalInfoScreen(navController: NavController, viewModel: MainViewModel) {
     val user = viewModel.currentUser ?: return
-    val context = LocalContext.current
-    
-    var name by remember { mutableStateOf(user.name) }
-    var phoneNumber by remember { mutableStateOf(user.phoneNumber ?: "") }
-    var age by remember { mutableStateOf(user.age?.toString() ?: "") }
-    var gender by remember { mutableStateOf(user.gender ?: "") }
-    
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var imageFile by remember { mutableStateOf<File?>(null) }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-        uri?.let {
-            try {
-                val file = File(context.cacheDir, "profile_temp_${System.currentTimeMillis()}.jpg")
-                context.contentResolver.openInputStream(it)?.use { input ->
-                    FileOutputStream(file).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                imageFile = file
-            } catch (e: Exception) {
-                Toast.makeText(context, "ไม่สามารถโหลดรูปภาพได้", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+    // กำหนดสีตามที่คุณระบุ
+    val TealTop = Color(0xFF7ECEC4)
+    val TealBottom = Color(0xFFB2EBE6)
+    val BgColor = Color(0xFFF0F4F2)
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Personal Info") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
+        containerColor = BgColor
     ) { padding ->
         Column(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile Image Section
+            // --- ส่วน Header สี Teal พร้อมส่วนโค้ง ---
             Box(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray)
-                    .clickable { launcher.launch("image/*") },
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .clip(RoundedCornerShape(bottomEnd = 120.dp))
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(TealTop, TealBottom)
+                        )
+                    )
             ) {
-                AsyncImage(
-                    model = imageUri ?: RetrofitClient.getImageUrl(user.profilePhotoPath),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                // 1. วงกลมตกแต่งอันที่ 1 (ซ้ายบน)
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.AccountCircle, contentDescription = null, tint = Color.White)
-                }
-            }
+                        .size(200.dp)
+                        .offset(x = (-50).dp, y = (100).dp)
+                        .clip(CircleShape)
+                        .background(TealAccent.copy(alpha = 0.35f))
+                        .align(Alignment.TopStart) // ตอนนี้ใช้ได้แล้วเพราะอยู่ใน Box
+                )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                // 2. วงกลมตกแต่งอันที่ 2 (ซ้ายล่าง/กลาง)
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .offset(x = 40.dp, y = (-80).dp)
+                        .clip(CircleShape)
+                        .background(TealAccent.copy(alpha = 0.35f))
+                        .align(Alignment.CenterStart)
+                )
 
-            // Error Display above Name
-            if (viewModel.errorMessage != null) {
-                Surface(
-                    color = Color(0xFFFFEBEE),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                // 3. UID (บนซ้าย)
+                Text(
+                    text = "UID : 000001",
+                    modifier = Modifier.padding(top = 40.dp, start = 20.dp),
+                    color = Color.Black
+                )
+
+                // 4. ส่วนโปรไฟล์ (ตรงกลาง)
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    AsyncImage(
+                        model = user.profilePhotoPath,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = viewModel.errorMessage!!,
-                        color = Color.Red,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(12.dp)
+                        text = "Welcome Dewwy",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            // Info Fields
-            Text("Name", modifier = Modifier.align(Alignment.Start), fontSize = 12.sp, color = Color.Gray)
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Gender", modifier = Modifier.align(Alignment.Start), fontSize = 12.sp, color = Color.Gray)
-            OutlinedTextField(
-                value = gender,
-                onValueChange = { gender = it },
-                modifier = Modifier.fillMaxWidth(),
+            // --- ส่วน Card ข้อมูลสีขาว ---
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .offset(y = (-20).dp), // ขยับขึ้นไปเกยส่วนสีเขียวเล็กน้อย
                 shape = RoundedCornerShape(12.dp),
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Phone", modifier = Modifier.align(Alignment.Start), fontSize = 12.sp, color = Color.Gray)
-            OutlinedTextField(
-                value = phoneNumber,
-                onValueChange = { phoneNumber = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Age", modifier = Modifier.align(Alignment.Start), fontSize = 12.sp, color = Color.Gray)
-            OutlinedTextField(
-                value = age,
-                onValueChange = { age = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) }
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    if (name.isBlank()) {
-                        viewModel.errorMessage = "กรุณากรอกชื่อ"
-                        return@Button
-                    }
-                    
-                    viewModel.updateUserProfile(
-                        name = name,
-                        phoneNumber = phoneNumber,
-                        age = age,
-                        gender = gender,
-                        imageFile = imageFile
-                    ) {
-                        Toast.makeText(context, "Profile Updated Successfully", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF80DEEA)),
-                enabled = !viewModel.isLoading
+                color = Color.White,
+                shadowElevation = 2.dp
             ) {
-                if (viewModel.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
-                } else {
-                    Text("Save Changes", color = Color.Black, fontWeight = FontWeight.Bold)
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    // Gmail Section
+                    Column {
+                        Text("Gmail", fontSize = 12.sp, color = Color.Gray)
+                        Text(
+                            text = user.email ?: "Dewwy49@gmail.com",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    Divider(color = Color.LightGray.copy(alpha = 0.4f))
+
+                    // ข้อมูลแถวอื่นๆ (Gender, Phone, Age)
+                    InfoRowItem(
+                        icon = Icons.Default.Person,
+                        label = "Gender",
+                        value = user.gender ?: "Male"
+                    )
+
+                    InfoRowItem(
+                        icon = Icons.Default.Phone,
+                        label = "Phone",
+                        value = user.phoneNumber ?: "093-555-5555"
+                    )
+
+                    InfoRowItem(
+                        icon = Icons.Default.DateRange,
+                        label = "Age",
+                        value = user.age?.toString() ?: "13"
+                    )
                 }
             }
+
+            // ปุ่ม Action ด้านล่าง (เช่น แก้ไข) สามารถเพิ่มต่อได้ตรงนี้
+        }
+    }
+}
+
+@Composable
+fun InfoRowItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = Color.DarkGray
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(text = label, fontSize = 12.sp, color = Color.Gray)
+            Text(
+                text = value,
+                fontSize = 14.sp,
+                color = Color.DarkGray,
+                modifier = Modifier.padding(top = 2.dp)
+            )
         }
     }
 }
