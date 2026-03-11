@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.room.util.copy
+//import androidx.room.util.copy
 import coil.compose.AsyncImage
 import com.example.book_manage_sys.network.RetrofitClient
 import com.example.book_manage_sys.viewmodel.MainViewModel
@@ -197,7 +197,7 @@ fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate(Screen.Loans.route) },
-                    icon = { Icon(Icons.Default.List, contentDescription = null) },
+                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
                     label = { Text("Loans", fontSize = 11.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         unselectedIconColor = Color.Gray,
