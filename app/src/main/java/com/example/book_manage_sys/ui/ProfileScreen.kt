@@ -20,89 +20,202 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.room.util.copy
 import coil.compose.AsyncImage
 import com.example.book_manage_sys.network.RetrofitClient
 import com.example.book_manage_sys.viewmodel.MainViewModel
+
+private val TealTop    = Color(0xFF7ECEC4)
+private val TealBottom = Color(0xFFB2EBE6)
+private val PurpleRing = Color(0xFF9B59B6)
+private val BgColor    = Color(0xFFF0F4F2)
+private val PurpleNav  = Color(0xFF9B59B6)
+
+private val TealAccent     = Color(0xFFFFFFFF)
+
 
 @Composable
 fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
     val user = viewModel.currentUser ?: return
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Header with Gradient
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF80DEEA), Color(0xFFE0F7FA))
-                    ),
-                    shape = RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "UID : ${user.id.toString().padStart(6, '0')}",
-                    modifier = Modifier.align(Alignment.Start).padding(16.dp),
-                    color = Color.Black,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                AsyncImage(
-                    model = RetrofitClient.getImageUrl(user.profilePhotoPath),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    contentScale = ContentScale.Crop
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "Welcome ${user.name}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgColor)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            Text(text = "Gmail", color = Color.Gray, fontSize = 12.sp)
-            Text(text = user.email, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            ProfileMenuItem(Icons.Default.Person, "Personal Info", "View and edit your profile.") {
-                navController.navigate(Screen.PersonalInfo.route)
-            }
-            ProfileMenuItem(Icons.Default.FavoriteBorder, "Favorites", "View your favorite books.") {
-                navController.navigate(Screen.Favorites.route)
-            }
-            ProfileMenuItem(Icons.Default.List, "Loans", "Check your loan history.") {
-                navController.navigate(Screen.Loans.route)
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Button(
-                onClick = { 
-                    viewModel.currentUser = null
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+            // ── Header ──────────────────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .background(
+                        Brush.verticalGradient(listOf(TealTop, TealBottom)),
+                        shape = RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp)
+                    )
             ) {
-                Text("Logout", color = Color.Black)
+                // Teal blob top-left
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .align(Alignment.TopStart)
+                        .offset(x = (-50).dp, y = 100.dp)
+                        .clip(CircleShape)
+                        .background(TealAccent.copy(alpha = 0.35f))
+                )
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .align(Alignment.TopStart)
+                        .offset(x = 40.dp, y = (-80).dp)
+                        .clip(CircleShape)
+                        .background(TealAccent.copy(alpha = 0.35f))
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // UID top-left
+                    Text(
+                        text = "UID : ${user.id.toString().padStart(6, '0')}",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, top = 16.dp),
+                        color = Color.Black,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Avatar with purple ring
+                    Box(contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .background(PurpleRing)
+                        )
+                        AsyncImage(
+                            model = RetrofitClient.getImageUrl(user.profilePhotoPath),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(90.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Welcome ${user.name}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ── Gmail card ──────────────────────────────────────────
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
+                    Text("Gmail", color = Color.Gray, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(user.email, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Menu card ───────────────────────────────────────────
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                    ProfileMenuItem(
+                        icon = Icons.Default.Person,
+                        title = "Personal Info",
+                        subtitle = "Menu description."
+                    ) { navController.navigate(Screen.PersonalInfo.route) }
+
+                    Divider(color = Color(0xFFF0F0F0))
+
+                    ProfileMenuItem(
+                        icon = Icons.Default.ThumbUp,
+                        title = "Favorites",
+                        subtitle = "Menu description."
+                    ) { navController.navigate(Screen.Favorites.route) }
+
+                    Divider(color = Color(0xFFF0F0F0))
+
+                    ProfileMenuItem(
+                        icon = Icons.Default.List,
+                        title = "Loans",
+                        subtitle = "Menu description."
+                    ) { navController.navigate(Screen.Loans.route) }
+
+                    Divider(color = Color(0xFFF0F0F0))
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // ── Bottom Nav ──────────────────────────────────────────
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 8.dp
+            ) {
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { navController.navigate(Screen.Home.route) },
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                    label = { Text("Home", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = Color.Transparent
+                    )
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { navController.navigate(Screen.Loans.route) },
+                    icon = { Icon(Icons.Default.List, contentDescription = null) },
+                    label = { Text("Loans", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = Color.Transparent
+                    )
+                )
+                NavigationBarItem(
+                    selected = true,
+                    onClick = {},
+                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    label = { Text("Profile", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = PurpleNav,
+                        selectedTextColor = PurpleNav,
+                        indicatorColor = Color.Transparent
+                    )
+                )
             }
         }
     }
@@ -114,14 +227,25 @@ fun ProfileMenuItem(icon: ImageVector, title: String, subtitle: String, onClick:
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = Color.DarkGray
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(text = title, fontWeight = FontWeight.Medium)
-            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
         }
+        Icon(
+            Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Color.LightGray,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
