@@ -38,7 +38,7 @@ import com.example.book_manage_sys.viewmodel.MainViewModel
 import java.io.File
 import java.io.FileOutputStream
 
-// ── Theme Colors (เหมือน LoansScreen) ────────────────────────
+// ── Theme Colors ────────────────────────
 private val BgColor       = Color(0xFFF0F4F2)
 private val TealAccent    = Color(0xFF7ECEC4)
 private val PurpleAccent  = Color(0xFF7E57C2)
@@ -52,9 +52,14 @@ fun HomeScreen(navController: NavController, viewModel: MainViewModel) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showTypeMenu  by remember { mutableStateOf(false) }
 
+    // โหลดข้อมูล Favorites เมื่อเข้าหน้า Home เพื่อให้หัวใจแสดงสถานะถูกต้อง
+    LaunchedEffect(Unit) {
+        viewModel.fetchFavorites()
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(BgColor)) {
 
-        // ── Decorative background circles (เหมือน LoansScreen) ─
+        // ── Decorative background circles ─
         Box(
             modifier = Modifier
                 .size(220.dp)
@@ -70,33 +75,47 @@ fun HomeScreen(navController: NavController, viewModel: MainViewModel) {
                 .clip(CircleShape)
                 .background(PurpleAccent.copy(alpha = 0.10f))
         )
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 20.dp, y = 140.dp)
-                .clip(CircleShape)
-                .background(TealAccent.copy(alpha = 0.12f))
-        )
-        Box(
-            modifier = Modifier
-                .size(180.dp)
-                .align(Alignment.BottomStart)
-                .offset(x = (-50).dp, y = 50.dp)
-                .clip(CircleShape)
-                .background(PurpleAccent.copy(alpha = 0.08f))
-        )
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .align(Alignment.BottomEnd)
-                .offset(x = 30.dp, y = (-80).dp)
-                .clip(CircleShape)
-                .background(TealAccent.copy(alpha = 0.13f))
-        )
 
         Scaffold(
             containerColor = Color.Transparent,
+            bottomBar = {
+                NavigationBar(
+                    containerColor = Color.White,
+                    tonalElevation = 8.dp
+                ) {
+                    NavigationBarItem(
+                        selected = true,
+                        onClick = {},
+                        icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                        label = { Text("Home", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor  = TealAccent,
+                            selectedTextColor  = TealAccent,
+                            indicatorColor     = TealAccent.copy(alpha = 0.15f)
+                        )
+                    )
+                    NavigationBarItem(
+                        selected = false,
+                        onClick = { navController.navigate(Screen.Loans.route) },
+                        icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
+                        label = { Text("Loans", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            unselectedIconColor = Color(0xFF8A9B97),
+                            unselectedTextColor = Color(0xFF8A9B97)
+                        )
+                    )
+                    NavigationBarItem(
+                        selected = false,
+                        onClick = { navController.navigate(Screen.Profile.route) },
+                        icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                        label = { Text("Profile", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            unselectedIconColor = Color(0xFF8A9B97),
+                            unselectedTextColor = Color(0xFF8A9B97)
+                        )
+                    )
+                }
+            },
             floatingActionButton = {
                 if (viewModel.currentUser?.role?.equals("admin", ignoreCase = true) == true) {
                     FloatingActionButton(
@@ -143,7 +162,6 @@ fun HomeScreen(navController: NavController, viewModel: MainViewModel) {
 
                     Spacer(modifier = Modifier.width(10.dp))
 
-                    // Filter button — gradient teal เหมือน LoansScreen
                     Box {
                         Row(
                             modifier = Modifier
@@ -202,7 +220,7 @@ fun HomeScreen(navController: NavController, viewModel: MainViewModel) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // ── Section Header (เหมือน LoansScreen) ───────
+                // ── Section Header ───────
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -268,11 +286,19 @@ fun HomeScreen(navController: NavController, viewModel: MainViewModel) {
                     items(viewModel.books.filter {
                         it.name.contains(searchQuery, ignoreCase = true)
                     }) { book ->
+                        // เช็คสถานะ Favorite จากลิสต์ใน ViewModel
                         val isFavorite = viewModel.favorites.any { it.id == book.id }
+                        
                         BookItem(
                             book = book,
                             isFavorite = isFavorite,
-                            onFavoriteClick = { viewModel.toggleFavorite(book.id) },
+                            onFavoriteClick = { 
+                                if (viewModel.currentUser == null) {
+                                    Toast.makeText(context, "กรุณาเข้าสู่ระบบก่อน", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    viewModel.toggleFavorite(book.id) 
+                                }
+                            },
                             onClick = {
                                 navController.navigate(Screen.BookDetail.createRoute(book.id))
                             }
@@ -322,7 +348,6 @@ fun BookItem(book: Book, isFavorite: Boolean, onFavoriteClick: () -> Unit, onCli
                     contentScale = ContentScale.Crop
                 )
 
-                // Status badge (top-left)
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -340,9 +365,9 @@ fun BookItem(book: Book, isFavorite: Boolean, onFavoriteClick: () -> Unit, onCli
                     )
                 }
 
-                // Favorite button (top-right)
+                // Favorite button (หัวใจ)
                 IconButton(
-                    onClick = onFavoriteClick,
+                    onClick = { onFavoriteClick() },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(4.dp)
@@ -353,26 +378,12 @@ fun BookItem(book: Book, isFavorite: Boolean, onFavoriteClick: () -> Unit, onCli
                         imageVector = if (isFavorite) Icons.Default.Favorite
                         else Icons.Default.FavoriteBorder,
                         contentDescription = "Favorite",
-                        tint = if (isFavorite) BorrowedColor else Color(0xFFB0BEC5),
+                        tint = if (isFavorite) Color.Red else Color(0xFFB0BEC5),
                         modifier = Modifier.size(16.dp)
                     )
                 }
-
-                // Gradient overlay bottom
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.25f))
-                            )
-                        )
-                )
             }
 
-            // ── Accent bar ─────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -398,7 +409,7 @@ fun BookItem(book: Book, isFavorite: Boolean, onFavoriteClick: () -> Unit, onCli
     }
 }
 
-// ── BookEditDialog — ไม่แตะ logic, ปรับสีให้ match theme ─────
+// ── BookEditDialog ─────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookEditDialog(
@@ -450,7 +461,6 @@ fun BookEditDialog(
                     .padding(24.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Dialog header with accent bar
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -490,7 +500,6 @@ fun BookEditDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Image Picker
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

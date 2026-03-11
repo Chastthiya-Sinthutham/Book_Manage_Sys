@@ -133,7 +133,7 @@ fun FavoritesScreen(navController: NavController, viewModel: MainViewModel) {
                         DropdownMenuItem(
                             text = { Text("ทั้งหมด") },
                             onClick = {
-                                viewModel.filterBooksByType(null)
+                                viewModel.filterFavoritesByType(null)
                                 showTypeMenu = false
                             }
                         )
@@ -141,7 +141,7 @@ fun FavoritesScreen(navController: NavController, viewModel: MainViewModel) {
                             DropdownMenuItem(
                                 text = { Text(type.bookTypeName) },
                                 onClick = {
-                                    viewModel.filterBooksByType(type.id)
+                                    viewModel.filterFavoritesByType(type.id)
                                     showTypeMenu = false
                                 }
                             )
@@ -153,20 +153,26 @@ fun FavoritesScreen(navController: NavController, viewModel: MainViewModel) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // GRID BOOKS
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(viewModel.favorites) { book ->
-                    val isFavorite = viewModel.favorites.any { it.id == book.id }
-                    BookItem(
-                        book = book,
-                        isFavorite = isFavorite,
-                        onFavoriteClick = { viewModel.toggleFavorite(book.id) },
-                        onClick = { navController.navigate(Screen.BookDetail.createRoute(book.id)) }
-                    )
+            if (viewModel.filteredFavorites.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("ไม่มีหนังสือที่ถูกใจ", color = Color.Gray)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(viewModel.filteredFavorites) { book ->
+                        val isFavorite = viewModel.favorites.any { it.id == book.id }
+                        BookItem(
+                            book = book,
+                            isFavorite = isFavorite,
+                            onFavoriteClick = { viewModel.toggleFavorite(book.id) },
+                            onClick = { navController.navigate(Screen.BookDetail.createRoute(book.id)) }
+                        )
+                    }
                 }
             }
         }

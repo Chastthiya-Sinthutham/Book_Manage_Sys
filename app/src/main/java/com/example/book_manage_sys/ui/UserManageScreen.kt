@@ -66,24 +66,45 @@ fun UserManageScreen(navController: NavController, viewModel: MainViewModel) {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(viewModel.allUsers) { user ->
-                    UserItem(
-                        user = user,
-                        onEdit = { userToEdit = user },
-                        onDelete = { 
-                            viewModel.deleteUser(user.id)
-                            Toast.makeText(context, "User deleted", Toast.LENGTH_SHORT).show()
-                        }
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (viewModel.isLoading && viewModel.allUsers.isEmpty()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color(0xFF7E57C2)
                     )
+                } else if (viewModel.errorMessage != null && viewModel.allUsers.isEmpty()) {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = "เกิดข้อผิดพลาด", color = Color.Red, fontWeight = FontWeight.Bold)
+                        Text(text = viewModel.errorMessage!!, color = Color.Gray, fontSize = 12.sp)
+                        Button(onClick = { viewModel.fetchAllUsers() }, modifier = Modifier.padding(top = 8.dp)) {
+                            Text("ลองใหม่")
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(viewModel.allUsers) { user ->
+                            UserItem(
+                                user = user,
+                                onEdit = { userToEdit = user },
+                                onDelete = { 
+                                    viewModel.deleteUser(user.id)
+                                    Toast.makeText(context, "User deleted", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 
+    // Dialogs remain the same...
     if (showAddDialog) {
         UserAddDialog(
             onDismiss = { showAddDialog = false },
@@ -122,7 +143,7 @@ fun UserItem(user: User, onEdit: () -> Unit, onDelete: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
