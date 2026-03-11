@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -13,6 +14,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,6 +27,13 @@ import com.example.book_manage_sys.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
+
+// ── Theme Colors ──────────────────────────────────────────────
+private val BgColor       = Color(0xFFF0F4F2)
+private val TealAccent    = Color(0xFF7ECEC4)
+private val PurpleAccent  = Color(0xFF7E57C2)
+private val AvailColor    = Color(0xFF4CAF50)
+private val BorrowedColor = Color(0xFFE53935)
 
 @Composable
 fun LoansScreen(navController: NavController, viewModel: MainViewModel) {
@@ -35,79 +46,193 @@ fun LoansScreen(navController: NavController, viewModel: MainViewModel) {
         viewModel.fetchUserBorrows()
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Search Bar & Filter Button
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("ค้นหารายการยืม...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFF3E5F5),
-                    unfocusedContainerColor = Color(0xFFF3E5F5),
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
-                )
-            )
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            Box {
-                IconButton(
-                    onClick = { showStatusMenu = true },
-                    modifier = Modifier.background(Color(0xFF7E57C2), RoundedCornerShape(8.dp))
-                ) {
-                    Icon(imageVector = Icons.Default.List, contentDescription = "Filter", tint = Color.White)
-                }
-                
-                DropdownMenu(
-                    expanded = showStatusMenu,
-                    onDismissRequest = { showStatusMenu = false }
-                ) {
-                    val statusOptions = listOf(
-                        Pair("ทั้งหมด", null),
-                        Pair("รอยืนยัน", "pending"),
-                        Pair("ยืนยันการรับ", "picked_up"),
-                        Pair("ยืนยันการคืน", "returned"),
-                        Pair("ยังไม่คืน", "no_returned"),
-                        Pair("ยกเลิกแล้ว", "cancel"),
-                        Pair("เลยกำหนด", "forget")
+    Box(modifier = Modifier.fillMaxSize().background(BgColor)) {
+
+        // ── Decorative background circles ──────────────────────
+        Box(
+            modifier = Modifier
+                .size(220.dp)
+                .offset(x = (-60).dp, y = (-60).dp)
+                .clip(CircleShape)
+                .background(TealAccent.copy(alpha = 0.18f))
+        )
+        Box(
+            modifier = Modifier
+                .size(160.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 50.dp, y = 30.dp)
+                .clip(CircleShape)
+                .background(PurpleAccent.copy(alpha = 0.10f))
+        )
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 20.dp, y = 140.dp)
+                .clip(CircleShape)
+                .background(TealAccent.copy(alpha = 0.12f))
+        )
+        Box(
+            modifier = Modifier
+                .size(180.dp)
+                .align(Alignment.BottomStart)
+                .offset(x = (-50).dp, y = 50.dp)
+                .clip(CircleShape)
+                .background(PurpleAccent.copy(alpha = 0.08f))
+        )
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .align(Alignment.BottomEnd)
+                .offset(x = 30.dp, y = (-80).dp)
+                .clip(CircleShape)
+                .background(TealAccent.copy(alpha = 0.13f))
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // ── Search Bar & Filter Button ─────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("ค้นหารายการยืม...", color = Color(0xFF8A9B97)) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null, tint = TealAccent)
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor   = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor      = TealAccent,
+                        unfocusedBorderColor    = Color(0xFFD6E4E1)
                     )
-                    
-                    statusOptions.forEach { (label, value) ->
-                        DropdownMenuItem(
-                            text = { Text(label) },
-                            onClick = {
-                                selectedStatusFilter = value
-                                showStatusMenu = false
-                            }
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Box {
+                    IconButton(
+                        onClick = { showStatusMenu = true },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.verticalGradient(listOf(TealAccent, Color(0xFF4DB6AC)))
+                            )
+                    ) {
+                        Icon(Icons.Default.List, contentDescription = "Filter", tint = Color.White)
+                    }
+
+                    DropdownMenu(
+                        expanded = showStatusMenu,
+                        onDismissRequest = { showStatusMenu = false },
+                        modifier = Modifier.background(Color.White, RoundedCornerShape(14.dp))
+                    ) {
+                        val statusOptions = listOf(
+                            Pair("ทั้งหมด", null),
+                            Pair("รอยืนยัน", "pending"),
+                            Pair("ยืนยันการรับ", "picked_up"),
+                            Pair("ยืนยันการคืน", "returned"),
+                            Pair("ยังไม่คืน", "no_returned"),
+                            Pair("ยกเลิกแล้ว", "cancel"),
+                            Pair("เลยกำหนด", "forget")
                         )
+
+                        statusOptions.forEach { (label, value) ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        label,
+                                        color = if (selectedStatusFilter == value) TealAccent
+                                        else Color(0xFF2D3E3A),
+                                        fontWeight = if (selectedStatusFilter == value) FontWeight.Bold
+                                        else FontWeight.Normal
+                                    )
+                                },
+                                onClick = {
+                                    selectedStatusFilter = value
+                                    showStatusMenu = false
+                                }
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(text = "รายการการยืมหนังสือ", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val filteredBorrows = viewModel.userBorrows.filter {
-                (it.bookName?.contains(searchQuery, ignoreCase = true) == true || it.id.toString().contains(searchQuery)) &&
-                (selectedStatusFilter == null || it.pickupStatus == selectedStatusFilter)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Accent bar
+                    Box(
+                        modifier = Modifier
+                            .width(5.dp)
+                            .height(28.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(TealAccent, Color(0xFF4DB6AC))
+                                )
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "รายการการยืมหนังสือ",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp,
+                            color = Color(0xFF1A2E2A)
+                        )
+                    }
+                }
+
+                // Count badge
+                val totalCount = viewModel.userBorrows.filter {
+                    (it.bookName?.contains(searchQuery, ignoreCase = true) == true ||
+                            it.id.toString().contains(searchQuery)) &&
+                            (selectedStatusFilter == null || it.pickupStatus == selectedStatusFilter)
+                }.size
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = TealAccent.copy(alpha = 0.15f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, TealAccent.copy(alpha = 0.4f))
+                ) {
+                    Text(
+                        text = "$totalCount รายการ",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TealAccent
+                    )
+                }
             }
-            
-            items(
-                items = filteredBorrows,
-                key = { it.id }
-            ) { borrow ->
-                LoanItem(borrow, isAdmin, viewModel)
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val filteredBorrows = viewModel.userBorrows.filter {
+                    (it.bookName?.contains(searchQuery, ignoreCase = true) == true ||
+                            it.id.toString().contains(searchQuery)) &&
+                            (selectedStatusFilter == null || it.pickupStatus == selectedStatusFilter)
+                }
+
+                items(
+                    items = filteredBorrows,
+                    key = { it.id }
+                ) { borrow ->
+                    LoanItem(borrow, isAdmin, viewModel)
+                }
             }
-        }
-    }
+        } // end Column
+    } // end Box
 }
 
 @Composable
@@ -116,23 +241,19 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
     var countdownText by remember { mutableStateOf("") }
     var isOverdueState by remember { mutableStateOf(false) }
 
-    // ใช้เวลาอัปเดตล่าสุด (updated_at) แทนเวลาที่เริ่มจอง (borrow_date)
     val referenceDate = if (!borrow.updatedAt.isNullOrEmpty()) borrow.updatedAt else borrow.borrowDate
 
     LaunchedEffect(borrow.pickupStatus, referenceDate) {
         if (borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned") {
             while (true) {
                 if (borrow.pickupStatus == "no_returned") {
-                    // สำหรับสถานะ "ยังไม่คืน" ให้เริ่มนับเดินหน้าจาก 0 (เวลาที่เข้าสู่สถานะนี้)
-                    val diff = calculateTimeDiff(referenceDate, 0) 
-                    isOverdueState = true // บังคับเป็นสีแดง
+                    val diff = calculateTimeDiff(referenceDate, 0)
+                    isOverdueState = true
                     countdownText = formatDiffTime(Math.abs(diff))
                 } else {
-                    // สำหรับสถานะ "ยืนยันการรับ" ให้นับถอยหลังจาก 5 วัน
-                    val diff = calculateTimeDiff(referenceDate, 5) 
+                    val diff = calculateTimeDiff(referenceDate, 5)
                     isOverdueState = diff <= 0
                     countdownText = formatDiffTime(Math.abs(diff))
-
                     if (diff <= 0) {
                         viewModel.updateBorrowStatus(borrow.id, "no_returned")
                     }
@@ -145,58 +266,137 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
         }
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp),
-        shape = RoundedCornerShape(8.dp)
+    val statusColor = if (isOverdueState &&
+        (borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned")
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        BorrowedColor
+    } else {
+        when (borrow.pickupStatus) {
+            "pending"          -> Color(0xFFFFA726)
+            "picked_up"        -> AvailColor
+            "returned"         -> Color(0xFF29B6F6)
+            "cancel", "forget" -> Color(0xFFB0BEC5)
+            "no_returned"      -> BorrowedColor
+            else               -> Color.Black
+        }
+    }
+
+    val statusText = when (borrow.pickupStatus) {
+        "pending"     -> "รอยืนยัน"
+        "picked_up"   -> "ยืนยันการรับ"
+        "returned"    -> "ยืนยันการคืน"
+        "cancel"      -> "ยกเลิกแล้ว"
+        "forget"      -> "เลยกำหนด"
+        "no_returned" -> "ยังไม่คืน"
+        else          -> borrow.pickupStatus
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(3.dp, RoundedCornerShape(16.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(statusColor)
+        )
+
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "ID: ${borrow.id}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(text = borrow.bookName ?: "ไม่ทราบชื่อหนังสือ", color = Color.DarkGray, fontSize = 14.sp)
-                    
-                    // แสดงเวลาอัปเดตแบบอ่านง่าย (ตัดตัว T และเสี้ยววินาทีออก)
-                    val displayDate = referenceDate?.replace("T", " ")?.split(".")?.get(0)?.replace("Z", "") ?: ""
-                    Text(text = "อัปเดตล่าสุด: $displayDate", color = Color.Gray, fontSize = 12.sp)
-                    
+                    // ID badge + book name
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(TealAccent.copy(alpha = 0.15f))
+                                .padding(horizontal = 7.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "#${borrow.id}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TealAccent
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = borrow.bookName ?: "ไม่ทราบชื่อหนังสือ",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color(0xFF1A2E2A)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    val displayDate = referenceDate
+                        ?.replace("T", " ")
+                        ?.split(".")?.get(0)
+                        ?.replace("Z", "") ?: ""
+                    Text(
+                        text = "อัปเดตล่าสุด: $displayDate",
+                        color = Color(0xFF8A9B97),
+                        fontSize = 12.sp
+                    )
+
                     if (isAdmin) {
-                        Text(text = "User ID: ${borrow.userId}", color = Color(0xFF7E57C2), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "User ID: ${borrow.userId}",
+                            color = PurpleAccent,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
-                    val statusColor = if (isOverdueState && (borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned")) {
-                        Color.Red
-                    } else {
-                        when (borrow.pickupStatus) {
-                            "pending" -> Color(0xFFFBC02D)
-                            "picked_up" -> Color(0xFF4CAF50)
-                            "returned" -> Color(0xFF2196F3)
-                            "cancel", "forget" -> Color.Gray
-                            "no_returned" -> Color.Red
-                            else -> Color.Black
-                        }
-                    }
-
-                    val statusText = when (borrow.pickupStatus) {
-                        "pending" -> "รอยืนยัน"
-                        "picked_up" -> "ยืนยันการรับ"
-                        "returned" -> "ยืนยันการคืน"
-                        "cancel" -> "ยกเลิกแล้ว"
-                        "forget" -> "เลยกำหนด"
-                        "no_returned" -> "ยังไม่คืน"
-                        else -> borrow.pickupStatus
-                    }
-
                     if (isAdmin) {
                         Box {
-                            TextButton(onClick = { expanded = true }) {
-                                Text(text = statusText, color = statusColor, fontWeight = FontWeight.Bold)
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = statusColor)
+                            Surface(
+                                onClick = { expanded = true },
+                                shape = RoundedCornerShape(10.dp),
+                                color = statusColor.copy(alpha = 0.12f),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp, statusColor.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(
+                                        horizontal = 10.dp, vertical = 6.dp
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = statusText,
+                                        color = statusColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                    Icon(
+                                        Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        tint = statusColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
-                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false },
+                                modifier = Modifier.background(
+                                    Color.White, RoundedCornerShape(12.dp)
+                                )
+                            ) {
                                 val options = listOf(
                                     Pair("รอยืนยัน", "pending"),
                                     Pair("ยืนยันการรับ", "picked_up"),
@@ -215,22 +415,51 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
                             }
                         }
                     } else {
-                        Text(text = statusText, color = statusColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = statusColor.copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, statusColor.copy(alpha = 0.4f)
+                            )
+                        ) {
+                            Text(
+                                text = statusText,
+                                modifier = Modifier.padding(
+                                    horizontal = 10.dp, vertical = 6.dp
+                                ),
+                                color = statusColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
+                }
+            }
 
-                    if ((borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned") && countdownText.isNotEmpty()) {
-                        // ปรับข้อความให้เหมาะสมกับแต่ละสถานะ
-                        val labelText = if (borrow.pickupStatus == "no_returned") "ยังไม่คืนมาแล้ว" else if (isOverdueState) "เกินกำหนดมา" else "ต้องคืนในอีก"
-                        val textColor = if (isOverdueState || borrow.pickupStatus == "no_returned") Color.Red else Color(0xFFFBC02D)
-                        
-                        Text(
-                            text = "$labelText $countdownText",
-                            color = textColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+            if ((borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned") &&
+                countdownText.isNotEmpty()
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+
+                val labelText = if (borrow.pickupStatus == "no_returned") "ยังไม่คืนมาแล้ว"
+                else if (isOverdueState) "เกินกำหนดมา"
+                else "ต้องคืนในอีก"
+                val textColor = if (isOverdueState || borrow.pickupStatus == "no_returned")
+                    BorrowedColor else TealAccent
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(textColor.copy(alpha = 0.10f))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$labelText  $countdownText",
+                        color = textColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }
@@ -248,15 +477,12 @@ fun calculateTimeDiff(dateString: String?, daysLimit: Int): Long {
     for (format in formats) {
         try {
             val sdf = SimpleDateFormat(format, Locale.getDefault())
-            // บังคับใช้ UTC เพื่อให้ตรงกับมาตรฐานเวลาของ Server/DB ป้องกันเวลาเคลื่อน
             sdf.timeZone = TimeZone.getTimeZone("UTC")
-            
             val date = sdf.parse(dateString)
             if (date != null) {
                 val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
                 calendar.time = date
                 calendar.add(Calendar.DAY_OF_YEAR, daysLimit)
-                
                 val now = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
                 return calendar.timeInMillis - now.timeInMillis
             }
