@@ -38,7 +38,8 @@ fun MainApp() {
         BottomBarScreen.Profile.route,
         BottomBarScreen.UserManage.route,
         Screen.BookDetail.route,
-        Screen.Favorites.route
+        Screen.Favorites.route,
+        Screen.PersonalInfo.route
     )
 
     Scaffold(
