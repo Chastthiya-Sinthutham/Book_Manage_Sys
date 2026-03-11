@@ -22,11 +22,13 @@ class MainViewModel : ViewModel() {
     var books by mutableStateOf<List<Book>>(emptyList())
     var bookTypes by mutableStateOf<List<BookType>>(emptyList())
     var favorites by mutableStateOf<List<Book>>(emptyList())
+    var filteredFavorites by mutableStateOf<List<Book>>(emptyList())
     var userBorrows by mutableStateOf<List<Borrow>>(emptyList())
     var allUsers by mutableStateOf<List<User>>(emptyList())
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
     var selectedTypeId by mutableStateOf<Int?>(null)
+    var favoriteSelectedTypeId by mutableStateOf<Int?>(null)
 
     init {
         fetchBooks()
@@ -204,16 +206,45 @@ class MainViewModel : ViewModel() {
         val userId = currentUser?.id ?: return
         viewModelScope.launch {
             try {
-                favorites = RetrofitClient.apiService.getFavorites(userId)
+                val favs = RetrofitClient.apiService.getFavorites(userId)
+                favorites = favs
+                applyFavoriteFilter()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
+    fun filterFavoritesByType(typeId: Int?) {
+        favoriteSelectedTypeId = typeId
+        applyFavoriteFilter()
+    }
+
+    private fun applyFavoriteFilter() {
+        filteredFavorites = if (favoriteSelectedTypeId == null) {
+            favorites
+        } else {
+            favorites.filter { it.typeId == favoriteSelectedTypeId }
+        }
+    }
+
     fun toggleFavorite(bookId: Int) {
         val userId = currentUser?.id ?: return
         val isFav = favorites.any { it.id == bookId }
+        
+        // Optimistic UI Update: เปลี่ยนสถานะทันทีในหน้าจอ
+        if (isFav) {
+            favorites = favorites.filter { it.id != bookId }
+        } else {
+            // หาข้อมูลหนังสือจากลิสต์รวมมาใส่ใน favorites
+            val bookToAdd = books.find { it.id == bookId }
+            if (bookToAdd != null) {
+                favorites = favorites + bookToAdd
+            }
+        }
+        applyFavoriteFilter()
+
+        // ส่งคำสั่งไปที่ Server
         viewModelScope.launch {
             try {
                 if (isFav) {
@@ -221,8 +252,13 @@ class MainViewModel : ViewModel() {
                 } else {
                     RetrofitClient.apiService.addFavorite(mapOf("user_id" to userId, "book_id" to bookId))
                 }
-                fetchFavorites()
+                // Sync ข้อมูลกับ Server อีกครั้งเพื่อให้แน่ใจว่าถูกต้อง
+                val favs = RetrofitClient.apiService.getFavorites(userId)
+                favorites = favs
+                applyFavoriteFilter()
             } catch (e: Exception) {
+                // หากเกิดข้อผิดพลาด ให้โหลดข้อมูลใหม่เพื่อ Rollback สถานะ UI
+                fetchFavorites()
                 e.printStackTrace()
             }
         }
