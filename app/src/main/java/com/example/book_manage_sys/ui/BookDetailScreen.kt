@@ -43,6 +43,7 @@ fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, boo
     val book = viewModel.books.find { it.id == bookId } ?: return
     var showEditDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -257,6 +258,59 @@ fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, boo
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                if (showDeleteDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteDialog = false },
+                        shape = RoundedCornerShape(20.dp),
+                        containerColor = Color.White,
+                        icon = {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = BorrowedColor,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        },
+                        title = {
+                            Text(
+                                "ยืนยันการลบ",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        },
+                        text = {
+                            Text(
+                                "คุณต้องการลบหนังสือ \"${book.name}\" ใช่หรือไม่?\nการกระทำนี้ไม่สามารถย้อนกลับได้",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showDeleteDialog = false
+                                    viewModel.deleteBook(book.id)
+                                    navController.popBackStack()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = BorrowedColor),
+                                shape = RoundedCornerShape(50.dp)
+                            ) {
+                                Text("ลบเลย", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        dismissButton = {
+                            OutlinedButton(
+                                onClick = { showDeleteDialog = false },
+                                shape = RoundedCornerShape(50.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.LightGray)
+                            ) {
+                                Text("ยกเลิก", color = Color.Gray)
+                            }
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
                 // ── Action buttons ─────────────────────────────
                 if (viewModel.currentUser?.role?.equals("admin", ignoreCase = true) == true) {
                     Row(
@@ -264,22 +318,12 @@ fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, boo
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
-                            onClick = {
-                                viewModel.deleteBook(book.id)
-                                navController.popBackStack()
-                            },
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.5.dp, BorrowedColor.copy(alpha = 0.7f)
-                            ),
+                            onClick = { showDeleteDialog = true }, // เปลี่ยนจากลบตรงๆ เป็นเปิด dialog
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, BorrowedColor.copy(alpha = 0.7f)),
                             modifier = Modifier.weight(1f).height(50.dp),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = null,
-                                tint = BorrowedColor,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Icon(Icons.Default.Delete, contentDescription = null, tint = BorrowedColor, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("ลบหนังสือ", color = BorrowedColor, fontWeight = FontWeight.Bold)
                         }
@@ -289,12 +333,7 @@ fun BookDetailScreen(navController: NavController, viewModel: MainViewModel, boo
                             modifier = Modifier.weight(1f).height(50.dp),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("แก้ไข", color = Color.White, fontWeight = FontWeight.Bold)
                         }
