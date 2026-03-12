@@ -198,20 +198,6 @@ fun LoginScreen(navController: NavController, viewModel: MainViewModel) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Forgot password
-            TextButton(
-                onClick = { /* handle forgot password */ },
-                enabled = !viewModel.isLoading
-            ) {
-                Text(
-                    text = "Forget password ?",
-                    color = SignUpColor,
-                    fontSize = 14.sp
-                )
-            }
-
             Spacer(modifier = Modifier.weight(1f))
 
             // Sign up row

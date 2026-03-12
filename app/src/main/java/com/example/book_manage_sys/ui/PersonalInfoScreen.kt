@@ -37,6 +37,7 @@ private val TealTop    = Color(0xFF7ECEC4)
 private val TealBottom = Color(0xFFB2EBE6)
 private val PurpleRing = Color(0xFF7E57C2)
 private val BgColor    = Color(0xFFF0F4F2)
+private val PurpleNav  = Color(0xFF9B59B6)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,169 +68,193 @@ fun PersonalInfoScreen(navController: NavController, viewModel: MainViewModel) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BgColor)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // ── Header ────────────────────────────────────────────────
-        Box(
+    Scaffold(
+        containerColor = BgColor,
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(260.dp)
-                .clip(RoundedCornerShape(bottomEnd = 120.dp))
-                .background(brush = Brush.verticalGradient(listOf(TealTop, TealBottom)))
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
         ) {
+            // ── Header ────────────────────────────────────────────────
             Box(
                 modifier = Modifier
-                    .size(150.dp)
-                    .offset(x = (-40).dp, y = (-30).dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.2f))
-            )
-
-            Text(
-                text = "UID : ${user.id.toString().padStart(6, '0')}",
-                modifier = Modifier.padding(top = 40.dp, start = 20.dp),
-                color = Color.Black,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp
-            )
-
-            IconButton(
-                onClick = { isEditMode = !isEditMode },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 32.dp, end = 12.dp)
-            ) {
-                Icon(
-                    imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
-                    contentDescription = "Edit",
-                    tint = Color.White
-                )
-            }
-
-            Column(
-                modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .clip(RoundedCornerShape(bottomEnd = 120.dp))
+                    .background(brush = Brush.verticalGradient(listOf(TealTop, TealBottom)))
             ) {
                 Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.clickable { if (isEditMode) launcher.launch("image/*") }
+                    modifier = Modifier
+                        .size(150.dp)
+                        .offset(x = (-40).dp, y = (-30).dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f))
+                )
+
+                Text(
+                    text = "UID : ${user.id.toString().padStart(6, '0')}",
+                    modifier = Modifier.padding(top = 40.dp, start = 20.dp),
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+
+                // ปุ่ม Edit มุมขวาบน
+                IconButton(
+                    onClick = { isEditMode = !isEditMode },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 32.dp, end = 12.dp)
                 ) {
-                    Box(modifier = Modifier.size(90.dp).clip(CircleShape).background(PurpleRing))
-                    AsyncImage(
-                        model = imageUri ?: RetrofitClient.getImageUrl(user.profilePhotoPath),
-                        contentDescription = null,
-                        modifier = Modifier.size(84.dp).clip(CircleShape).background(Color.White),
-                        contentScale = ContentScale.Crop
+                    Icon(
+                        imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = Color.White
                     )
-                    if (isEditMode) {
-                        Box(
-                            modifier = Modifier
-                                .size(84.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.35f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.AccountBox, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.clickable { if (isEditMode) launcher.launch("image/*") }
+                    ) {
+                        Box(modifier = Modifier.size(90.dp).clip(CircleShape).background(PurpleRing))
+                        AsyncImage(
+                            model = imageUri ?: RetrofitClient.getImageUrl(user.profilePhotoPath),
+                            contentDescription = null,
+                            modifier = Modifier.size(84.dp).clip(CircleShape).background(Color.White),
+                            contentScale = ContentScale.Crop
+                        )
+                        if (isEditMode) {
+                            Box(
+                                modifier = Modifier
+                                    .size(84.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.35f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Menu, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                            }
                         }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Welcome ${user.name}", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Welcome ${user.name}", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
-        }
 
-        // ── Card ข้อมูล ───────────────────────────────────────────
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(16.dp).offset(y = (-20).dp),
-            shape = RoundedCornerShape(16.dp),
-            color = Color.White,
-            shadowElevation = 2.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            // ── Card ข้อมูล ───────────────────────────────────────────
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .offset(y = (-20).dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                shadowElevation = 2.dp
             ) {
-                Column {
-                    Text("Gmail", fontSize = 12.sp, color = Color.Gray)
-                    Text(user.email, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-                }
-
-                HorizontalDivider(color = Color(0xFFF0F0F0))
-
-                EditableInfoRow(
-                    icon = Icons.Default.Person,
-                    label = "Gender",
-                    value = gender,
-                    isEditMode = isEditMode,
-                    onValueChange = { gender = it }
-                )
-
-                EditableInfoRow(
-                    icon = Icons.Default.Phone,
-                    label = "Phone",
-                    value = phoneNumber,
-                    isEditMode = isEditMode,
-                    onValueChange = { phoneNumber = it }
-                )
-
-                EditableInfoRow(
-                    icon = Icons.Default.DateRange,
-                    label = "Age",
-                    value = age,
-                    isEditMode = isEditMode,
-                    onValueChange = { age = it }
-                )
-            }
-        }
-
-        // ── Save button ───────────────────────────────────────────
-        if (isEditMode) {
-            if (viewModel.errorMessage != null) {
-                Text(
-                    viewModel.errorMessage!!,
-                    color = Color.Red,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Button(
-                onClick = {
-                    if (name.isBlank()) {
-                        viewModel.errorMessage = "กรุณากรอกชื่อ"
-                        return@Button
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Gmail
+                    Column {
+                        Text("Gmail", fontSize = 12.sp, color = Color.Gray)
+                        Text(
+                            user.email,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
-                    viewModel.updateUserProfile(
-                        name = name,
-                        phoneNumber = phoneNumber,
-                        age = age,
-                        gender = gender,
-                        imageFile = imageFile
-                    ) {
-                        Toast.makeText(context, "อัปเดตข้อมูลสำเร็จ", Toast.LENGTH_SHORT).show()
-                        isEditMode = false
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(50.dp),
-                shape = RoundedCornerShape(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = TealTop),
-                enabled = !viewModel.isLoading
-            ) {
-                if (viewModel.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
+
+                    HorizontalDivider(color = Color(0xFFF0F0F0))
+
+                    // Gender — Radio Button
+                    EditableInfoRow(
+                        icon = Icons.Default.Person,
+                        label = "Gender",
+                        value = gender,
+                        isEditMode = isEditMode,
+                        onValueChange = { gender = it }
+                    )
+
+                    HorizontalDivider(color = Color(0xFFF0F0F0))
+
+                    // Phone
+                    EditableInfoRow(
+                        icon = Icons.Default.Phone,
+                        label = "Phone",
+                        value = phoneNumber,
+                        isEditMode = isEditMode,
+                        onValueChange = { phoneNumber = it }
+                    )
+
+                    HorizontalDivider(color = Color(0xFFF0F0F0))
+
+                    // Age
+                    EditableInfoRow(
+                        icon = Icons.Default.DateRange,
+                        label = "Age",
+                        value = age,
+                        isEditMode = isEditMode,
+                        onValueChange = { age = it }
+                    )
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            // ── Save button (แสดงเฉพาะ edit mode) ───────────────────
+            if (isEditMode) {
+                if (viewModel.errorMessage != null) {
+                    Text(
+                        viewModel.errorMessage!!,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Button(
+                    onClick = {
+                        if (name.isBlank()) {
+                            viewModel.errorMessage = "กรุณากรอกชื่อ"
+                            return@Button
+                        }
+                        viewModel.updateUserProfile(
+                            name = name,
+                            phoneNumber = phoneNumber,
+                            age = age,
+                            gender = gender,
+                            imageFile = imageFile
+                        ) {
+                            Toast.makeText(context, "อัปเดตข้อมูลสำเร็จ", Toast.LENGTH_SHORT).show()
+                            isEditMode = false
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealTop),
+                    enabled = !viewModel.isLoading
+                ) {
+                    if (viewModel.isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 
@@ -251,19 +276,40 @@ fun EditableInfoRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(label, fontSize = 12.sp, color = Color.Gray)
             if (isEditMode) {
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor      = TealTop,
-                        unfocusedBorderColor    = Color(0xFFD6E4E1),
-                        focusedContainerColor   = Color(0xFFF8FFFE),
-                        unfocusedContainerColor = Color(0xFFF8FFFE)
+                if (label == "Gender") {
+                    // Radio buttons สำหรับ Gender
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        listOf("Male", "Female", "Other").forEach { option ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable { onValueChange(option) }
+                            ) {
+                                RadioButton(
+                                    selected = value == option,
+                                    onClick = { onValueChange(option) },
+                                    colors = RadioButtonDefaults.colors(selectedColor = TealTop)
+                                )
+                                Text(option, fontSize = 13.sp, color = Color.DarkGray)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                    }
+                } else {
+                    // TextField สำหรับ field อื่น
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor      = TealTop,
+                            unfocusedBorderColor    = Color(0xFFD6E4E1),
+                            focusedContainerColor   = Color(0xFFF8FFFE),
+                            unfocusedContainerColor = Color(0xFFF8FFFE)
+                        )
                     )
-                )
+                }
             } else {
                 Text(
                     text = value.ifEmpty { "-" },
