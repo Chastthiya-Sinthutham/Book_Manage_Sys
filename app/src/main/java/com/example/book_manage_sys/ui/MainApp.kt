@@ -1,8 +1,5 @@
 package com.example.book_manage_sys.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -12,9 +9,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -33,18 +28,12 @@ sealed class BottomBarScreen(val route: String, val title: String, val icon: Ima
 fun MainApp() {
     val navController = rememberNavController()
     val viewModel: MainViewModel = viewModel()
-    if (!viewModel.isSessionRestored) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color(0xFFF0F4F2)),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = Color(0xFF7ECEC4))
-        }
-        return
-    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val isAdmin = viewModel.currentUser?.role?.equals("admin", ignoreCase = true) == true
+    
+    // กำหนดหน้าเริ่มต้น: ถ้ามี User อยู่แล้วให้ไป Home ถ้าไม่มีให้ไป Login
+    val startRoute = if (viewModel.currentUser != null) Screen.Home.route else Screen.Login.route
 
     val showBottomBar = currentDestination?.route in listOf(
         BottomBarScreen.Home.route,
@@ -55,6 +44,8 @@ fun MainApp() {
         Screen.Favorites.route,
         Screen.PersonalInfo.route
     )
+    val profileSubRoutes = listOf(Screen.PersonalInfo.route, Screen.Favorites.route)
+
 
     Scaffold(
         bottomBar = {
@@ -70,12 +61,30 @@ fun MainApp() {
                     items.add(BottomBarScreen.Profile)
 
                     items.forEach { screen ->
+                        val profileSubRoutes = listOf(
+                            Screen.PersonalInfo.route,
+                            Screen.Favorites.route
+                        )
+
+                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true ||
+                                (screen.route == Screen.Profile.route &&
+                                        currentDestination?.route in profileSubRoutes)
+
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = null) },
                             label = { Text(screen.title) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            selected = isSelected,
                             onClick = {
-                                navController.navigate(screen.route) {
+                                val targetRoute = screen.route
+                                val currentRoute = currentDestination?.route
+
+                                // ถ้าอยู่ใน sub-route ของ Profile และกด Profile
+                                if (screen.route == Screen.Profile.route && currentRoute in profileSubRoutes) {
+                                    navController.popBackStack(Screen.Profile.route, inclusive = false)
+                                    return@NavigationBarItem
+                                }
+
+                                navController.navigate(targetRoute) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
                                     }
@@ -85,14 +94,15 @@ fun MainApp() {
                             }
                         )
                     }
+
+
                 }
             }
         }
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = if (viewModel.currentUser != null)
-                Screen.Home.route else Screen.Login.route,
+            startDestination = startRoute,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Login.route) {

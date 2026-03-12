@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -100,7 +101,7 @@ fun LoansScreen(navController: NavController, viewModel: MainViewModel) {
                         ) {
                             listOf(
                                 Pair("ทั้งหมด", null),
-                                Pair("รอยืนยัน", "pending"),
+                                Pair("รอการยืนยันการรับ", "pending"),
                                 Pair("ยืนยันการรับ", "picked_up"),
                                 Pair("ยืนยันการคืน", "returned"),
                                 Pair("ยังไม่คืน", "no_returned"),
@@ -178,19 +179,30 @@ fun LoansScreen(navController: NavController, viewModel: MainViewModel) {
     }
 }
 
-// LoanItem, calculateTimeDiff, formatDiffTime — เหมือนเดิมทุกอย่าง
 @Composable
 fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
     var expanded by remember { mutableStateOf(false) }
     var countdownText by remember { mutableStateOf("") }
     var isOverdueState by remember { mutableStateOf(false) }
 
+    val currentStatus = borrow.pickupStatus.trim().lowercase()
     val referenceDate = if (!borrow.updatedAt.isNullOrEmpty()) borrow.updatedAt else borrow.borrowDate
 
     LaunchedEffect(borrow.pickupStatus, referenceDate) {
-        if (borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned") {
+        if (currentStatus == "pending") {
             while (true) {
-                if (borrow.pickupStatus == "no_returned") {
+                val diff = calculateTimeDiff(referenceDate, 0) + (24 * 60 * 60 * 1000) // borrowDate + 24hr
+                if (diff <= 0) {
+                    viewModel.updateBorrowStatus(borrow.id, "forget")
+                    break
+                }
+                countdownText = formatDiffTime(diff)
+                isOverdueState = false
+                delay(1000)
+            }
+        } else if (currentStatus == "picked_up" || currentStatus == "no_returned") {
+            while (true) {
+                if (currentStatus == "no_returned") {
                     val diff = calculateTimeDiff(referenceDate, 0)
                     isOverdueState = true
                     countdownText = formatDiffTime(Math.abs(diff))
@@ -208,21 +220,22 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
         }
     }
 
-    val statusColor = if (isOverdueState && (borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned")) {
+    val statusColor = if (isOverdueState && (currentStatus == "picked_up" || currentStatus == "no_returned")) {
         BorrowedColor
     } else {
-        when (borrow.pickupStatus) {
-            "pending"          -> Color(0xFFFFA726)
-            "picked_up"        -> AvailColor
-            "returned"         -> Color(0xFF29B6F6)
-            "cancel", "forget" -> Color(0xFFB0BEC5)
-            "no_returned"      -> BorrowedColor
-            else               -> Color.Black
+        when (currentStatus) {
+            "pending"     -> Color(0xFFFFA726)
+            "picked_up"   -> AvailColor
+            "returned"    -> Color(0xFF29B6F6)
+            "cancel"      -> Color(0xFF9E9E9E)
+            "forget"      -> Color(0xFFB0BEC5)
+            "no_returned" -> BorrowedColor
+            else          -> Color.Gray
         }
     }
 
-    val statusText = when (borrow.pickupStatus) {
-        "pending"     -> "รอยืนยัน"
+    val statusText = when (currentStatus) {
+        "pending"     -> "รอการยืนยันการรับ"
         "picked_up"   -> "ยืนยันการรับ"
         "returned"    -> "ยืนยันการคืน"
         "cancel"      -> "ยกเลิกแล้ว"
@@ -240,7 +253,7 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
         Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(statusColor))
 
         Column(modifier = Modifier.padding(14.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(TealAccent.copy(alpha = 0.15f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
@@ -258,40 +271,108 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
                     }
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
+                // Badge Status
+                Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 8.dp)) {
                     if (isAdmin) {
                         Box {
                             Surface(
                                 onClick = { expanded = true },
-                                shape = RoundedCornerShape(10.dp),
-                                color = statusColor.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = statusColor.copy(alpha = 0.15f),  // ← ลบ if/else cancel ออก
                                 border = androidx.compose.foundation.BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))
                             ) {
-                                Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(statusText, color = statusColor, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = statusColor, modifier = Modifier.size(18.dp))
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        statusText,
+                                        color = statusColor,  // ← ลบ if/else cancel ออก
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Icon(
+                                        Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        tint = statusColor,  // ← ลบ if/else cancel ออก
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                             }
+
+
                             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White, RoundedCornerShape(12.dp))) {
-                                listOf(Pair("รอยืนยัน", "pending"), Pair("ยืนยันการรับ", "picked_up"), Pair("ยืนยันการคืน", "returned"), Pair("ยังไม่คืน", "no_returned")).forEach { (label, value) ->
+                                listOf(Pair("รอการยืนยันการรับ", "pending"), Pair("ยืนยันการรับ", "picked_up"), Pair("ยืนยันการคืน", "returned"), Pair("ยังไม่คืน", "no_returned")).forEach { (label, value) ->
                                     DropdownMenuItem(text = { Text(label) }, onClick = { expanded = false; viewModel.updateBorrowStatus(borrow.id, value) })
                                 }
                             }
                         }
+                        // ใหม่ - ลบ if/else ของ cancel ออก ให้ใช้ statusColor ตรงๆ เหมือน status อื่น
                     } else {
-                        Surface(shape = RoundedCornerShape(10.dp), color = statusColor.copy(alpha = 0.12f), border = androidx.compose.foundation.BorderStroke(1.dp, statusColor.copy(alpha = 0.4f))) {
-                            Text(statusText, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), color = statusColor, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = statusColor.copy(alpha = 0.15f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, statusColor.copy(alpha = 0.4f)
+                            )
+                        ) {
+                            Text(
+                                statusText,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                color = statusColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
             }
 
-            if ((borrow.pickupStatus == "picked_up" || borrow.pickupStatus == "no_returned") && countdownText.isNotEmpty()) {
+            // ปุ่มยกเลิก สำหรับ User
+            if (!isAdmin && currentStatus == "pending") {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = { viewModel.cancelBorrow(borrow.id) },
+                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorrowedColor.copy(alpha = 0.6f)),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp), tint = BorrowedColor)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("ยกเลิกการยืมหนังสือ", color = BorrowedColor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            if ((currentStatus == "pending" || currentStatus == "picked_up" || currentStatus == "no_returned") && countdownText.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
-                val labelText = if (borrow.pickupStatus == "no_returned") "ยังไม่คืนมาแล้ว" else if (isOverdueState) "เกินกำหนดมา" else "ต้องคืนในอีก"
-                val textColor = if (isOverdueState || borrow.pickupStatus == "no_returned") BorrowedColor else TealAccent
-                Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(textColor.copy(alpha = 0.10f)).padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("$labelText  $countdownText", color = textColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                val labelText = when {
+                    currentStatus == "pending" -> "ต้องรับภายในอีก"
+                    currentStatus == "no_returned" -> "ยังไม่คืนมาแล้ว"
+                    isOverdueState -> "เกินกำหนดมา"
+                    else -> "ต้องคืนในอีก"
+                }
+                val textColor = when {
+                    currentStatus == "pending" -> Color(0xFFFFA726)
+                    isOverdueState || currentStatus == "no_returned" -> BorrowedColor
+                    else -> TealAccent
+                }
+                // ← ส่วนนี้หายไป ต้องเพิ่มกลับเข้ามา
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(textColor.copy(alpha = 0.10f))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "$labelText  $countdownText",
+                        color = textColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

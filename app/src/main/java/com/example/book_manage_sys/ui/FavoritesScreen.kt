@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,8 +28,6 @@ import com.example.book_manage_sys.viewmodel.MainViewModel
 private val BgColor       = Color(0xFFF0F4F2)
 private val TealAccent    = Color(0xFF7ECEC4)
 private val PurpleAccent  = Color(0xFF7E57C2)
-private val AvailColor    = Color(0xFF4CAF50)
-private val BorrowedColor = Color(0xFFE53935)
 
 @Composable
 fun FavoritesScreen(navController: NavController, viewModel: MainViewModel) {
@@ -88,7 +87,29 @@ fun FavoritesScreen(navController: NavController, viewModel: MainViewModel) {
                     .padding(padding)
                     .padding(horizontal = 16.dp)
             ) {
-                Spacer(modifier = Modifier.height(25.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ── Top Action Bar (Back Button) ────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.7f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1A2E2A)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // ── Header ─────────────────────────────────────
                 Row(

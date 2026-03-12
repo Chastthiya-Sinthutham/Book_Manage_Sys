@@ -96,8 +96,8 @@ interface ApiService {
     suspend fun getFavorites(@Path("userId") userId: Int): List<Book>
 
     @POST("api/favorites")
-    suspend fun addFavorite(@Body body: Map<String, Int>): ApiResponse
+    suspend fun addFavorite(@Body request: FavoriteRequest): ApiResponse
 
     @HTTP(method = "DELETE", path = "api/favorites", hasBody = true)
-    suspend fun removeFavorite(@Body body: Map<String, Int>): ApiResponse
+    suspend fun removeFavorite(@Body request: FavoriteRequest): ApiResponse
 }

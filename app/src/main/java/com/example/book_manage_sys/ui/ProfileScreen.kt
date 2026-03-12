@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-//import androidx.room.util.copy
 import coil.compose.AsyncImage
 import com.example.book_manage_sys.network.RetrofitClient
 import com.example.book_manage_sys.viewmodel.MainViewModel
@@ -29,7 +31,6 @@ private val TealTop    = Color(0xFF7ECEC4)
 private val TealBottom = Color(0xFFB2EBE6)
 private val PurpleRing = Color(0xFF9B59B6)
 private val BgColor    = Color(0xFFF0F4F2)
-private val PurpleNav  = Color(0xFF9B59B6)
 
 private val TealAccent     = Color(0xFFFFFFFF)
 
@@ -55,7 +56,7 @@ fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
                         shape = RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp)
                     )
             ) {
-                // Teal blob top-left
+                // Teal blobs for decoration
                 Box(
                     modifier = Modifier
                         .size(200.dp)
@@ -153,26 +154,26 @@ fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
                     ProfileMenuItem(
                         icon = Icons.Default.Person,
                         title = "Personal Info",
-                        subtitle = "Menu description."
+                        subtitle = "View and edit your personal details."
                     ) { navController.navigate(Screen.PersonalInfo.route) }
 
-                    Divider(color = Color(0xFFF0F0F0))
+                    HorizontalDivider(color = Color(0xFFF0F0F0))
 
                     ProfileMenuItem(
-                        icon = Icons.Default.ThumbUp,
-                        title = "Favorites",
-                        subtitle = "Menu description."
-                    ) { navController.navigate(Screen.Favorites.route) }
-
-                    Divider(color = Color(0xFFF0F0F0))
-
-                    ProfileMenuItem(
-                        icon = Icons.Default.List,
+                        icon = Icons.AutoMirrored.Filled.List,
                         title = "Loans",
-                        subtitle = "Menu description."
+                        subtitle = "Check your current book loans."
                     ) { navController.navigate(Screen.Loans.route) }
 
-                    Divider(color = Color(0xFFF0F0F0))
+                    HorizontalDivider(color = Color(0xFFF0F0F0))
+
+                    ProfileMenuItem(
+                        icon = Icons.Default.Favorite,
+                        title = "Favorites",
+                        subtitle = "View your favorite books."
+                    ) { navController.navigate(Screen.Favorites.route) }
+
+                    HorizontalDivider(color = Color(0xFFF0F0F0))
                 }
             }
 
@@ -187,10 +188,11 @@ fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
             ) {
                 Button(
                     onClick = {
-                        viewModel.logout()
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(0){ inclusive = true } // ← ล้าง back stack ทั้งหมด
-                            launchSingleTop = true
+                        viewModel.logout {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     },
                     shape = RoundedCornerShape(50.dp),
@@ -200,7 +202,7 @@ fun ProfileScreen(navController: NavController, viewModel: MainViewModel) {
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
                 ) {
                     Icon(
-                        Icons.Default.ExitToApp,
+                        Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = "Logout",
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
@@ -241,7 +243,7 @@ fun ProfileMenuItem(icon: ImageVector, title: String, subtitle: String, onClick:
             Text(subtitle, fontSize = 12.sp, color = Color.Gray)
         }
         Icon(
-            Icons.Default.KeyboardArrowRight,
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = Color.LightGray,
             modifier = Modifier.size(20.dp)

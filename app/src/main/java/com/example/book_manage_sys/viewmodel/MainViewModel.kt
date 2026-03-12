@@ -9,6 +9,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.book_manage_sys.data.*
 import com.example.book_manage_sys.network.RetrofitClient
+import com.google.gson.Gson
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -20,82 +22,92 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+    private val prefs = application.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    private val gson = Gson()
 
-    private val prefs = application.getSharedPreferences("session", Context.MODE_PRIVATE)
-
-    var currentUser            by mutableStateOf<User?>(null)
-    var books                  by mutableStateOf<List<Book>>(emptyList())
-    var bookTypes              by mutableStateOf<List<BookType>>(emptyList())
-    var favorites              by mutableStateOf<List<Book>>(emptyList())
-    var filteredFavorites      by mutableStateOf<List<Book>>(emptyList())
-    var userBorrows            by mutableStateOf<List<Borrow>>(emptyList())
-    var allUsers               by mutableStateOf<List<User>>(emptyList())
-    var isLoading              by mutableStateOf(false)
-    var errorMessage           by mutableStateOf<String?>(null)
-    var selectedTypeId         by mutableStateOf<Int?>(null)
+    var currentUser by mutableStateOf<User?>(null)
+    var books by mutableStateOf<List<Book>>(emptyList())
+    var bookTypes by mutableStateOf<List<BookType>>(emptyList())
+    var favorites by mutableStateOf<List<Book>>(emptyList())
+    var filteredFavorites by mutableStateOf<List<Book>>(emptyList())
+    var userBorrows by mutableStateOf<List<Borrow>>(emptyList())
+    var allUsers by mutableStateOf<List<User>>(emptyList())
+    var isLoading by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
+    var selectedTypeId by mutableStateOf<Int?>(null)
     var favoriteSelectedTypeId by mutableStateOf<Int?>(null)
-    var isSessionRestored      by mutableStateOf(false)
 
     init {
-        fetchBooks()
-        fetchBookTypes()
-        restoreSession()
-    }
-
-    // ── Session ────────────────────────────────────────────────
-    private fun saveSession(userId: Int) {
-        prefs.edit().putInt("user_id", userId).apply()
-    }
-
-    private fun clearSession() {
-        prefs.edit().clear().apply()
-    }
-
-    private fun restoreSession() {
-        val userId = prefs.getInt("user_id", -1)
-        if (userId == -1) {
-            isSessionRestored = true
-            return
+        val userJson = prefs.getString("current_user", null)
+        if (userJson != null) {
+            try {
+                currentUser = gson.fromJson(userJson, User::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
+        fetchInitialData()
+    }
+
+    private fun fetchInitialData() {
         viewModelScope.launch {
             try {
-                val user = RetrofitClient.apiService.getUser(userId)
-                currentUser = user
-                fetchFavorites()
-                fetchUserBorrows()
-                if (user.role.equals("admin", ignoreCase = true)) {
-                    fetchAllUsers()
+                val booksDeferred = async { RetrofitClient.apiService.getBooks() }
+                val typesDeferred = async { RetrofitClient.apiService.getBookTypes() }
+                
+                books = try { booksDeferred.await() } catch (e: Exception) { emptyList() }
+                bookTypes = try { typesDeferred.await() } catch (e: Exception) { emptyList() }
+
+                currentUser?.let { user ->
+                    fetchFavorites()
+                    fetchUserBorrows()
+                    if (user.role.equals("admin", ignoreCase = true)) {
+                        fetchAllUsers()
+                    }
                 }
             } catch (e: Exception) {
-                clearSession()
                 e.printStackTrace()
-            } finally {
-                isSessionRestored = true
             }
         }
     }
 
-    fun logout() {
-        clearSession()
-        currentUser            = null
-        favorites              = emptyList()
-        filteredFavorites      = emptyList()
-        userBorrows            = emptyList()
+    private fun saveSession(user: User) {
+        prefs.edit().putString("current_user", gson.toJson(user)).apply()
+    }
+
+    private fun clearSession() {
+        prefs.edit().remove("current_user").apply()
+        currentUser = null
+        favorites = emptyList()
+        filteredFavorites = emptyList()
+        userBorrows = emptyList()
+        allUsers = emptyList()
+        selectedTypeId = null
         favoriteSelectedTypeId = null
     }
 
-    // ── Books ──────────────────────────────────────────────────
+    fun logout(onSuccess: () -> Unit) {
+        clearSession()
+        onSuccess()
+    }
+
     fun fetchBooks() {
         viewModelScope.launch {
-            try { books = RetrofitClient.apiService.getBooks() }
-            catch (e: Exception) { e.printStackTrace() }
+            try {
+                books = RetrofitClient.apiService.getBooks()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun fetchBookTypes() {
         viewModelScope.launch {
-            try { bookTypes = RetrofitClient.apiService.getBookTypes() }
-            catch (e: Exception) { e.printStackTrace() }
+            try {
+                bookTypes = RetrofitClient.apiService.getBookTypes()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -103,23 +115,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         selectedTypeId = typeId
         viewModelScope.launch {
             try {
-                books = if (typeId == null) RetrofitClient.apiService.getBooks()
-                else RetrofitClient.apiService.getBooksByType(typeId)
-            } catch (e: Exception) { e.printStackTrace() }
+                books = if (typeId == null) {
+                    RetrofitClient.apiService.getBooks()
+                } else {
+                    RetrofitClient.apiService.getBooksByType(typeId)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    // ── Auth ───────────────────────────────────────────────────
     fun login(email: String, pass: String, onSuccess: () -> Unit) {
         isLoading = true
         errorMessage = null
         viewModelScope.launch {
             try {
-                val user = RetrofitClient.apiService.login(
-                    mapOf("email" to email, "password" to pass)
-                )
+                val user = RetrofitClient.apiService.login(mapOf("email" to email, "password" to pass))
                 currentUser = user
-                saveSession(user.id)
+                saveSession(user)
                 fetchFavorites()
                 fetchUserBorrows()
                 if (user.role.equals("admin", ignoreCase = true)) {
@@ -127,10 +141,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 onSuccess()
             } catch (e: HttpException) {
-                errorMessage = if (e.code() == 401) "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
-                else "เกิดข้อผิดพลาด: ${e.message()}"
+                errorMessage = if (e.code() == 401) "อีเมลหรือรหัสผ่านไม่ถูกต้อง" else "เกิดข้อผิดพลาด: ${e.message()}"
             } catch (e: Exception) {
-                e.printStackTrace()
                 errorMessage = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้"
             } finally {
                 isLoading = false
@@ -143,12 +155,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         errorMessage = null
         viewModelScope.launch {
             try {
-                RetrofitClient.apiService.register(
-                    mapOf("name" to name, "email" to email, "password" to pass)
-                )
+                RetrofitClient.apiService.register(mapOf(
+                    "name" to name,
+                    "email" to email,
+                    "password" to pass
+                ))
                 onSuccess()
             } catch (e: HttpException) {
-                errorMessage = "Registration Failed: ${e.response()?.errorBody()?.string() ?: e.message()}"
+                val errorMsg = e.response()?.errorBody()?.string() ?: e.message()
+                errorMessage = "Registration Failed: $errorMsg"
             } catch (e: Exception) {
                 errorMessage = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้"
             } finally {
@@ -157,18 +172,189 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // ── Users ──────────────────────────────────────────────────
+    // --- FAVORITE LOGIC ---
+    fun fetchFavorites() {
+        val user = currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val favs = RetrofitClient.apiService.getFavorites(user.id)
+                favorites = favs
+                applyFavoriteFilter()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun toggleFavorite(bookId: Int) {
+        val user = currentUser ?: return
+        val isFav = favorites.any { it.id == bookId }
+        val request = FavoriteRequest(user.id, bookId)
+
+        viewModelScope.launch {
+            try {
+                if (isFav) {
+                    RetrofitClient.apiService.removeFavorite(request)
+                } else {
+                    RetrofitClient.apiService.addFavorite(request)
+                }
+                fetchFavorites()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun filterFavoritesByType(typeId: Int?) {
+        favoriteSelectedTypeId = typeId
+        applyFavoriteFilter()
+    }
+
+    private fun applyFavoriteFilter() {
+        filteredFavorites = if (favoriteSelectedTypeId == null) {
+            favorites
+        } else {
+            favorites.filter { it.typeId == favoriteSelectedTypeId }
+        }
+    }
+
+    // --- BORROW LOGIC ---
+    fun fetchUserBorrows() {
+        val user = currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val borrows = if (user.role.equals("admin", ignoreCase = true)) {
+                    RetrofitClient.apiService.getAllBorrows()
+                } else {
+                    RetrofitClient.apiService.getUserBorrows(user.id)
+                }
+                userBorrows = borrows
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun borrowBook(bookId: Int, onSuccess: () -> Unit) {
+        val userId = currentUser?.id ?: return
+        isLoading = true
+        viewModelScope.launch {
+            try {
+                RetrofitClient.apiService.borrowBook(mapOf("book_id" to bookId, "user_id" to userId))
+                fetchBooks()
+                fetchUserBorrows()
+                onSuccess()
+            } catch (e: Exception) {
+                errorMessage = "เกิดข้อผิดพลาดในการยืม"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun updateBorrowStatus(borrowId: Int, status: String) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.apiService.updateBorrowStatus(borrowId, mapOf("status" to status))
+                fetchUserBorrows()
+                fetchBooks()
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    fun cancelBorrow(borrowId: Int) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.apiService.updateBorrowStatus(borrowId, mapOf("status" to "cancel"))
+                fetchUserBorrows()
+                fetchBooks()
+            } catch (e: HttpException) {
+                // เพิ่มบรรทัดนี้เพื่อดู error จาก server
+                val errorBody = e.response()?.errorBody()?.string()
+                android.util.Log.e("CANCEL_ERROR", "HTTP ${e.code()}: $errorBody")
+                errorMessage = "ยกเลิกไม่สำเร็จ: $errorBody"
+            } catch (e: Exception) {
+                android.util.Log.e("CANCEL_ERROR", "Exception: ${e.message}")
+                errorMessage = "ยกเลิกไม่สำเร็จ: ${e.message}"
+            }
+        }
+    }
+    // --- BOOK MANAGEMENT ---
+    fun addBook(book: Book, imageFile: File?, onSuccess: () -> Unit) {
+        isLoading = true
+        errorMessage = null
+        viewModelScope.launch {
+            try {
+                val name = (book.name).toRequestBody("text/plain".toMediaTypeOrNull())
+                val price = "0".toRequestBody("text/plain".toMediaTypeOrNull())
+                val pdfUrl = "".toRequestBody("text/plain".toMediaTypeOrNull())
+                val story = (book.shortStory ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val writer = (book.writer ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val office = (book.office ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val birth = (book.birth ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val typeId = book.typeId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+
+                val imagePart = imageFile?.let {
+                    val requestFile = it.asRequestBody("image/*".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("Book_img", it.name, requestFile)
+                }
+
+                RetrofitClient.apiService.createBook(name, price, story, writer, office, birth, typeId, pdfUrl, imagePart)
+                fetchBooks()
+                onSuccess()
+            } catch (e: Exception) {
+                errorMessage = "เพิ่มหนังสือไม่สำเร็จ: ${e.message}"
+            } finally { isLoading = false }
+        }
+    }
+
+    fun updateBook(id: Int, book: Book, imageFile: File?, onSuccess: () -> Unit) {
+        isLoading = true
+        errorMessage = null
+        viewModelScope.launch {
+            try {
+                val name = (book.name).toRequestBody("text/plain".toMediaTypeOrNull())
+                val price = "0".toRequestBody("text/plain".toMediaTypeOrNull())
+                val pdfUrl = "".toRequestBody("text/plain".toMediaTypeOrNull())
+                val story = (book.shortStory ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val writer = (book.writer ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val office = (book.office ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val birth = (book.birth ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
+                val typeId = book.typeId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+
+                val imagePart = imageFile?.let {
+                    val requestFile = it.asRequestBody("image/*".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("Book_img", it.name, requestFile)
+                }
+
+                RetrofitClient.apiService.updateBook(id, name, price, story, writer, office, birth, typeId, pdfUrl, imagePart)
+                fetchBooks()
+                onSuccess()
+            } catch (e: Exception) {
+                errorMessage = "แก้ไขหนังสือไม่สำเร็จ: ${e.message}"
+            } finally { isLoading = false }
+        }
+    }
+
+    fun deleteBook(id: Int) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.apiService.deleteBook(id)
+                fetchBooks()
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    // --- USER MANAGEMENT ---
     fun fetchAllUsers() {
         viewModelScope.launch {
-            try { allUsers = RetrofitClient.apiService.getAllUsers() }
-            catch (e: Exception) { e.printStackTrace() }
+            try { allUsers = RetrofitClient.apiService.getAllUsers() } catch (e: Exception) {}
         }
     }
 
     fun deleteUser(userId: Int) {
         viewModelScope.launch {
-            try { RetrofitClient.apiService.deleteUser(userId); fetchAllUsers() }
-            catch (e: Exception) { e.printStackTrace() }
+            try { RetrofitClient.apiService.deleteUser(userId); fetchAllUsers() } catch (e: Exception) {}
         }
     }
 
@@ -182,24 +368,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         errorMessage = null
         viewModelScope.launch {
             try {
+                val namePart = name.toRequestBody("text/plain".toMediaTypeOrNull())
+                val phonePart = phoneNumber.toRequestBody("text/plain".toMediaTypeOrNull())
+                val agePart = age.toRequestBody("text/plain".toMediaTypeOrNull())
+                val genderPart = gender.toRequestBody("text/plain".toMediaTypeOrNull())
+                val rolePart = role.toRequestBody("text/plain".toMediaTypeOrNull())
+                
                 val photoPart = imageFile?.let {
-                    MultipartBody.Part.createFormData("profile_photo", it.name, it.asRequestBody("image/*".toMediaTypeOrNull()))
+                    val requestFile = it.asRequestBody("image/*".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("profile_photo", it.name, requestFile)
                 }
-                RetrofitClient.apiService.updateUser(
-                    userId,
-                    name.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    phoneNumber.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    age.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    gender.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    role.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    photoPart
-                )
+
+                RetrofitClient.apiService.updateUser(userId, namePart, phonePart, agePart, genderPart, rolePart, photoPart)
+                
                 if (currentUser?.id == userId) {
-                    currentUser = RetrofitClient.apiService.getUser(userId)
+                    val updatedUser = RetrofitClient.apiService.getUser(userId)
+                    currentUser = updatedUser
+                    saveSession(updatedUser)
                 }
+                
                 onSuccess()
             } catch (e: HttpException) {
-                errorMessage = "Server Error (${e.code()}): ${e.response()?.errorBody()?.string() ?: e.message()}"
+                val errorMsg = e.response()?.errorBody()?.string() ?: e.message()
+                errorMessage = "Server Error (${e.code()}): $errorMsg"
                 e.printStackTrace()
             } catch (e: Exception) {
                 errorMessage = "Error: ${e.localizedMessage}"
@@ -207,207 +398,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } finally {
                 isLoading = false
             }
-        }
-    }
-
-    // ── Borrow ─────────────────────────────────────────────────
-    fun borrowBook(bookId: Int, onSuccess: () -> Unit) {
-        val userId = currentUser?.id ?: return
-        isLoading = true
-        viewModelScope.launch {
-            try {
-                RetrofitClient.apiService.borrowBook(mapOf("book_id" to bookId, "user_id" to userId))
-                fetchBooks()
-                fetchUserBorrows()
-                onSuccess()
-            } catch (e: HttpException) {
-                errorMessage = "ยืมไม่สำเร็จ: หนังสือเล่มนี้อาจถูกยืมไปแล้ว"
-            } catch (e: Exception) {
-                errorMessage = "เกิดข้อผิดพลาดในการยืม"
-            } finally {
-                isLoading = false
-            }
-        }
-    }
-
-    fun fetchUserBorrows() {
-        val user = currentUser ?: return
-        viewModelScope.launch {
-            try {
-                val borrows = if (user.role.equals("admin", ignoreCase = true))
-                    RetrofitClient.apiService.getAllBorrows()
-                else RetrofitClient.apiService.getUserBorrows(user.id)
-                userBorrows = borrows
-                checkAndExpireBorrows(borrows)
-            } catch (e: Exception) { e.printStackTrace() }
-        }
-    }
-
-    private fun checkAndExpireBorrows(borrows: List<Borrow>) {
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).time
-        borrows.forEach { borrow ->
-            if (borrow.pickupStatus == "pending") {
-                try {
-                    val d = sdf.parse(borrow.borrowDate)
-                    if (d != null && (now.time - d.time) / (1000 * 60 * 60) >= 24) {
-                        viewModelScope.launch {
-                            try { RetrofitClient.apiService.updateBorrowStatus(borrow.id, mapOf("status" to "forget")) } catch (_: Exception) {}
-                        }
-                    }
-                } catch (_: Exception) {}
-            } else if (borrow.pickupStatus == "picked_up") {
-                try {
-                    val d = sdf.parse(borrow.borrowDate)
-                    if (d != null) {
-                        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                        cal.time = d
-                        cal.add(Calendar.DAY_OF_YEAR, 5)
-                        if (now.after(cal.time)) {
-                            viewModelScope.launch {
-                                try { RetrofitClient.apiService.updateBorrowStatus(borrow.id, mapOf("status" to "no_returned")) } catch (_: Exception) {}
-                            }
-                        }
-                    }
-                } catch (_: Exception) {}
-            }
-        }
-    }
-
-    fun updateBorrowStatus(borrowId: Int, status: String) {
-        viewModelScope.launch {
-            try {
-                val response = RetrofitClient.apiService.updateBorrowStatus(borrowId, mapOf("status" to status))
-                if (response.error == false || response.error == null) {
-                    fetchUserBorrows()
-                    fetchBooks()
-                } else {
-                    errorMessage = response.message
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                errorMessage = "ไม่สามารถอัปเดตสถานะได้"
-            }
-        }
-    }
-
-    fun cancelBorrow(borrowId: Int) {
-        viewModelScope.launch {
-            try {
-                RetrofitClient.apiService.updateBorrowStatus(borrowId, mapOf("status" to "cancel"))
-                fetchUserBorrows()
-                fetchBooks()
-            } catch (e: Exception) { e.printStackTrace() }
-        }
-    }
-
-    // ── Favorites ──────────────────────────────────────────────
-    fun fetchFavorites() {
-        val userId = currentUser?.id ?: return
-        viewModelScope.launch {
-            try {
-                val favs = RetrofitClient.apiService.getFavorites(userId)
-                favorites = favs
-                applyFavoriteFilter()
-            } catch (e: Exception) { e.printStackTrace() }
-        }
-    }
-
-    fun filterFavoritesByType(typeId: Int?) {
-        favoriteSelectedTypeId = typeId
-        applyFavoriteFilter()
-    }
-
-    private fun applyFavoriteFilter() {
-        filteredFavorites = if (favoriteSelectedTypeId == null) favorites
-        else favorites.filter { it.typeId == favoriteSelectedTypeId }
-    }
-
-    fun toggleFavorite(bookId: Int) {
-        val userId = currentUser?.id ?: return
-        val isFav = favorites.any { it.id == bookId }
-        // Optimistic update
-        if (isFav) {
-            favorites = favorites.filter { it.id != bookId }
-        } else {
-            val bookToAdd = books.find { it.id == bookId }
-            if (bookToAdd != null) favorites = favorites + bookToAdd
-        }
-        applyFavoriteFilter()
-        viewModelScope.launch {
-            try {
-                if (isFav) RetrofitClient.apiService.removeFavorite(mapOf("user_id" to userId, "book_id" to bookId))
-                else RetrofitClient.apiService.addFavorite(mapOf("user_id" to userId, "book_id" to bookId))
-                val favs = RetrofitClient.apiService.getFavorites(userId)
-                favorites = favs
-                applyFavoriteFilter()
-            } catch (e: Exception) {
-                fetchFavorites()
-                e.printStackTrace()
-            }
-        }
-    }
-
-    // ── Books CRUD ─────────────────────────────────────────────
-    fun addBook(book: Book, imageFile: File?, onSuccess: () -> Unit) {
-        isLoading = true; errorMessage = null
-        viewModelScope.launch {
-            try {
-                val imagePart = imageFile?.let {
-                    MultipartBody.Part.createFormData("Book_img", it.name, it.asRequestBody("image/*".toMediaTypeOrNull()))
-                }
-                RetrofitClient.apiService.createBook(
-                    book.name.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    "Nan".toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.shortStory ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.writer ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.office ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.birth ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    book.typeId.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
-                    "Nan".toRequestBody("text/plain".toMediaTypeOrNull()),
-                    imagePart
-                )
-                fetchBooks(); onSuccess()
-            } catch (e: HttpException) {
-                errorMessage = "Server Error: ${e.response()?.errorBody()?.string() ?: e.message()}"; e.printStackTrace()
-            } catch (e: Exception) {
-                errorMessage = "เพิ่มหนังสือไม่สำเร็จ: ${e.message}"; e.printStackTrace()
-            } finally { isLoading = false }
-        }
-    }
-
-    fun updateBook(id: Int, book: Book, imageFile: File?, onSuccess: () -> Unit) {
-        isLoading = true; errorMessage = null
-        viewModelScope.launch {
-            try {
-                val imagePart = imageFile?.let {
-                    MultipartBody.Part.createFormData("Book_img", it.name, it.asRequestBody("image/*".toMediaTypeOrNull()))
-                }
-                RetrofitClient.apiService.updateBook(
-                    id,
-                    book.name.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    "Nan".toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.shortStory ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.writer ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.office ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    (book.birth ?: "").toRequestBody("text/plain".toMediaTypeOrNull()),
-                    book.typeId.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
-                    "Nan".toRequestBody("text/plain".toMediaTypeOrNull()),
-                    imagePart
-                )
-                fetchBooks(); onSuccess()
-            } catch (e: HttpException) {
-                errorMessage = "Server Error: ${e.response()?.errorBody()?.string() ?: e.message()}"; e.printStackTrace()
-            } catch (e: Exception) {
-                errorMessage = "แก้ไขข้อมูลไม่สำเร็จ: ${e.message}"; e.printStackTrace()
-            } finally { isLoading = false }
-        }
-    }
-
-    fun deleteBook(id: Int) {
-        viewModelScope.launch {
-            try { RetrofitClient.apiService.deleteBook(id); fetchBooks() }
-            catch (e: Exception) { e.printStackTrace() }
         }
     }
 }

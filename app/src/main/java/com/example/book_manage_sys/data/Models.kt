@@ -9,6 +9,7 @@ data class BookType(
 
 data class Book(
     val id: Int = 0,
+    @SerializedName("fav_id") val favId: Int? = null, // เพิ่มสำหรับเก็บ id จาก users_book_favs
     @SerializedName("Book_price") val price: Double = 0.0,
     @SerializedName("Book_name") val name: String = "",
     @SerializedName("Book_img") val img: String? = null,
@@ -46,11 +47,17 @@ data class Borrow(
     @SerializedName("Book_img") val bookImg: String?,
     @SerializedName("Book_writer") val bookWriter: String?,
     @SerializedName("Book_office") val bookOffice: String?,
-    @SerializedName("updated_at") val updatedAt: String? = null // เพิ่มฟิลด์นี้
+    @SerializedName("updated_at") val updatedAt: String? = null
 )
 
 data class ApiResponse(
     val error: Boolean? = null,
     val message: String? = null,
     val insertId: Int? = null
+)
+
+// Data class สำหรับส่ง Request Favorite
+data class FavoriteRequest(
+    @SerializedName("user_id") val userId: Int,
+    @SerializedName("book_id") val bookId: Int
 )
