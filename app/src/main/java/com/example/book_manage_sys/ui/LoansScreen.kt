@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -65,6 +66,28 @@ fun LoansScreen(navController: NavController, viewModel: MainViewModel) {
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
+                // ── Top Action Bar (Back Button) ────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.7f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1A2E2A)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 // Search Bar & Filter
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
@@ -278,7 +301,7 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
                             Surface(
                                 onClick = { expanded = true },
                                 shape = RoundedCornerShape(12.dp),
-                                color = statusColor.copy(alpha = 0.15f),  // ← ลบ if/else cancel ออก
+                                color = statusColor.copy(alpha = 0.15f),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))
                             ) {
                                 Row(
@@ -287,7 +310,7 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
                                 ) {
                                     Text(
                                         statusText,
-                                        color = statusColor,  // ← ลบ if/else cancel ออก
+                                        color = statusColor,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
                                         textAlign = TextAlign.Center
@@ -295,7 +318,7 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
                                     Icon(
                                         Icons.Default.ArrowDropDown,
                                         contentDescription = null,
-                                        tint = statusColor,  // ← ลบ if/else cancel ออก
+                                        tint = statusColor,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -308,7 +331,6 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
                                 }
                             }
                         }
-                        // ใหม่ - ลบ if/else ของ cancel ออก ให้ใช้ statusColor ตรงๆ เหมือน status อื่น
                     } else {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -359,7 +381,6 @@ fun LoanItem(borrow: Borrow, isAdmin: Boolean, viewModel: MainViewModel) {
                     isOverdueState || currentStatus == "no_returned" -> BorrowedColor
                     else -> TealAccent
                 }
-                // ← ส่วนนี้หายไป ต้องเพิ่มกลับเข้ามา
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
